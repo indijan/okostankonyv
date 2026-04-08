@@ -392,7 +392,7 @@ export async function reviewLessonSummaryDraft(input: {
       {
         role: "system",
         content:
-          "A megadott forrasszoveghez kepest ellenorizd a draft osszefoglalot. Adj minosegi es tenyszerusegi pontszamot 0-100 kozott. Sorold fel a hibakat es rovid javitasi javaslatokat. Utana keszits javitott, magyar nyelvu vegleges valtozatot. Csak a forrasszovegre tamaszkodhatsz. Ne adj hozza kulso tudast. A javitott valtozat legyen tomor, pontos, feladatok es utasitasok nelkul. Csak a legfontosabb tenybeli pontatlansagokra, hianyokra es felrevezeto megfogalmazasokra fokuszalj. Stilust, tipografiat, felkover kiemelest vagy szerkesztesi izlest ne minosits hibakent.",
+          "A megadott forrasszoveghez kepest ellenorizd a draft osszefoglalot. Adj minosegi es tenyszerusegi pontszamot 0-100 kozott. Sorold fel a hibakat es rovid javitasi javaslatokat. Utana keszits javitott, magyar nyelvu vegleges valtozatot. Csak a forrasszovegre tamaszkodhatsz. Ne adj hozza kulso tudast. A javitott valtozat legyen tomor, pontos, feladatok es utasitasok nelkul. Kizarolag ket hibatipust vizsgalj: (1) tenybeli tevedes vagy felreallitas, (2) olyan hiany, ahol a forrasban hangsulyos allitas kimaradt. Szinonima, atfogalmazas vagy stilusbeli kulonbseg onmagaban nem hiba. Ne minositsd hibakent, ha a jelentest helyesen adja vissza mas megfogalmazassal. Stilust, tipografiat, felkover kiemelest vagy szerkesztesi izlest ne minosits hibakent.",
       },
       {
         role: "user",

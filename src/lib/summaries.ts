@@ -652,7 +652,8 @@ export async function reviewLessonSummaries(options: GenerateLessonSummariesOpti
 
     const reviewTargets = (summaries ?? []).filter(
       (summary): summary is { type: "short_summary" | "key_points"; content: string } =>
-        summary.type === "short_summary" && Boolean(summary.content?.trim()),
+        (summary.type === "short_summary" || summary.type === "key_points") &&
+        Boolean(summary.content?.trim()),
     );
 
     if (reviewTargets.length === 0) {

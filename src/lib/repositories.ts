@@ -653,6 +653,111 @@ export async function applySummaryImprovement(options: {
   return { ok: true };
 }
 
+export async function applySummaryReviewCorrection(options: {
+  lessonId: string;
+  summaryType: "short_summary" | "key_points";
+  correctedContent: string;
+}) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const content = options.correctedContent.trim();
+
+  if (!content) {
+    throw new Error("Hiányzik a beszúrandó javított tartalom.");
+  }
+
+  const formatSummaryLikeExisting = (incoming: string, existing: string) => {
+    const boldTerms = [...existing.matchAll(/\*\*([^*]+)\*\*/g)]
+      .map((match) => match[1]?.trim())
+      .filter((term): term is string => Boolean(term));
+
+    let next = incoming.replace(/\r\n/g, "\n").trim();
+
+    for (const term of boldTerms) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const bolded = new RegExp(`\\*\\*\\s*${escaped}\\s*\\*\\*`, "i");
+      const plain = new RegExp(`\\b${escaped}\\b`, "i");
+      if (!bolded.test(next) && plain.test(next)) {
+        next = next.replace(plain, `**${term}**`);
+      }
+    }
+
+    if (!/\n\s*\n/.test(next)) {
+      const sentences = next
+        .split(/(?<=[.!?])\s+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (sentences.length > 3) {
+        const chunks: string[] = [];
+        for (let i = 0; i < sentences.length; i += 2) {
+          chunks.push(sentences.slice(i, i + 2).join(" ").trim());
+        }
+        next = chunks.join("\n\n");
+      }
+    }
+
+    return next.trim();
+  };
+
+  const normalizedContent =
+    options.summaryType === "key_points"
+      ? content
+          .split(/\n+/)
+          .map((item) => item.replace(/^[-*•]\s*/, "").trim())
+          .filter(Boolean)
+          .join("\n")
+      : content;
+
+  const { data: summaryRows, error: summaryLoadError } = await supabase
+    .from("lesson_summaries")
+    .select("id,type,content")
+    .eq("lesson_id", options.lessonId)
+    .order("created_at", { ascending: false })
+    .in("type", ["short_summary", "key_points"]);
+
+  if (summaryLoadError) {
+    throw new Error(`Failed to load target summary rows: ${summaryLoadError.message}`);
+  }
+
+  if (!summaryRows || summaryRows.length === 0) {
+    throw new Error("Nem találtam cél summary rekordot ehhez a beszúráshoz.");
+  }
+
+  const shortSummaryRow =
+    summaryRows.find((row) => row.type === "short_summary") ?? null;
+  const keyPointsRow = summaryRows.find((row) => row.type === "key_points") ?? null;
+
+  const updates: Array<{ id: string; content: string }> = [];
+
+  if (shortSummaryRow && options.summaryType === "short_summary") {
+    const nextSummary = formatSummaryLikeExisting(
+      normalizedContent,
+      shortSummaryRow.content ?? "",
+    );
+    updates.push({ id: shortSummaryRow.id, content: nextSummary });
+  }
+
+  if (keyPointsRow && options.summaryType === "key_points") {
+    updates.push({ id: keyPointsRow.id, content: normalizedContent });
+  }
+
+  for (const update of updates) {
+    const { error: updateError } = await supabase
+      .from("lesson_summaries")
+      .update({ content: update.content })
+      .eq("id", update.id);
+
+    if (updateError) {
+      throw new Error(`Failed to apply corrected summary content: ${updateError.message}`);
+    }
+  }
+  return { ok: true, updatedRows: updates.length };
+}
+
 function buildSubblockBookTitles(input: {
   childName?: string;
   subject: string;

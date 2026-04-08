@@ -1217,9 +1217,11 @@ export function StudyWorkspace({
     topicTitle: string,
     sourceGroupLabel: string,
     lessonId: string,
+    summaryType: "short_summary" | "key_points",
+    correctedContent: string,
     note: string,
   ) {
-    const key = `apply-note:${lessonId}:${note}`;
+    const key = `apply-note:${lessonId}:${summaryType}:${note}`;
     setActiveKey(key);
     setMessage(null);
     setError(null);
@@ -1228,7 +1230,7 @@ export function StudyWorkspace({
       const response = await fetch("/api/summaries/apply-note", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lessonId, note }),
+        body: JSON.stringify({ lessonId, summaryType, correctedContent, note }),
       });
 
       const payload = await readJsonResponse<{ ok?: boolean; error?: string }>(response);
@@ -2252,9 +2254,16 @@ export function StudyWorkspace({
     summaries: SubblockSummary[],
     type: "short_summary" | "child_friendly_explanation",
   ) {
-    const filtered = [...summaries]
+    const latestByLesson = new Map<string, SubblockSummary>();
+    for (const summary of [...summaries]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .filter((summary) => summary.type === type && !isMetaLessonTitle(summary.lessonTitle))
+      .filter((summary) => summary.type === type && !isMetaLessonTitle(summary.lessonTitle))) {
+      if (!latestByLesson.has(summary.lessonTitle)) {
+        latestByLesson.set(summary.lessonTitle, summary);
+      }
+    }
+
+    const filtered = Array.from(latestByLesson.values())
       .map((summary) => summary.content.trim())
       .filter(Boolean);
 
@@ -2267,10 +2276,17 @@ export function StudyWorkspace({
   }
 
   function buildKeyPoints(summaries: SubblockSummary[]) {
+    const latestByLesson = new Map<string, SubblockSummary>();
+    for (const summary of [...summaries]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .filter((summary) => summary.type === "key_points" && !isMetaLessonTitle(summary.lessonTitle))) {
+      if (!latestByLesson.has(summary.lessonTitle)) {
+        latestByLesson.set(summary.lessonTitle, summary);
+      }
+    }
+
     return [...new Set(
-      [...summaries]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .filter((summary) => summary.type === "key_points" && !isMetaLessonTitle(summary.lessonTitle))
+      Array.from(latestByLesson.values())
         .flatMap((summary) =>
           summary.content
             .split(/\n+/)
@@ -3351,7 +3367,7 @@ export function StudyWorkspace({
                                               </p>
                                               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--ink)]">
                                                 {review.improvementNotes.map((note) => {
-                                                  const applyKey = `apply-note:${review.lessonId}:${note}`;
+                                                  const applyKey = `apply-note:${review.lessonId}:${review.summaryType}:${note}`;
 
                                                   return (
                                                     <li key={note} className="flex flex-wrap items-start justify-between gap-2">
@@ -3364,6 +3380,8 @@ export function StudyWorkspace({
                                                             topic.title,
                                                             subblock.label,
                                                             review.lessonId,
+                                                            review.summaryType,
+                                                            review.correctedContent,
                                                             note,
                                                           )
                                                         }
