@@ -1583,6 +1583,128 @@ export async function deleteCurriculumSubblock(input: { topicId: string; title: 
   return { deleted: true };
 }
 
+export async function moveCurriculumTopic(input: {
+  id: string;
+  direction: "up" | "down";
+}) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data: current, error: currentError } = await supabase
+    .from("curriculum_topics")
+    .select("id,subject_id,sort_order")
+    .eq("id", input.id)
+    .single();
+
+  if (currentError || !current) {
+    throw new Error(`Failed to load topic for move: ${currentError?.message}`);
+  }
+
+  const comparator = input.direction === "up" ? "lt" : "gt";
+  const sortAscending = input.direction !== "up";
+  const { data: sibling, error: siblingError } = await supabase
+    .from("curriculum_topics")
+    .select("id,sort_order")
+    .eq("subject_id", current.subject_id)
+    [comparator]("sort_order", current.sort_order)
+    .order("sort_order", { ascending: sortAscending })
+    .limit(1)
+    .maybeSingle();
+
+  if (siblingError) {
+    throw new Error(`Failed to load sibling topic for move: ${siblingError.message}`);
+  }
+
+  if (!sibling) {
+    return { moved: false };
+  }
+
+  const now = new Date().toISOString();
+  const { error: firstSwapError } = await supabase
+    .from("curriculum_topics")
+    .update({ sort_order: sibling.sort_order, updated_at: now })
+    .eq("id", current.id);
+
+  if (firstSwapError) {
+    throw new Error(`Failed to move topic: ${firstSwapError.message}`);
+  }
+
+  const { error: secondSwapError } = await supabase
+    .from("curriculum_topics")
+    .update({ sort_order: current.sort_order, updated_at: now })
+    .eq("id", sibling.id);
+
+  if (secondSwapError) {
+    throw new Error(`Failed to move topic: ${secondSwapError.message}`);
+  }
+
+  return { moved: true };
+}
+
+export async function moveCurriculumSubblock(input: {
+  topicId: string;
+  title: string;
+  direction: "up" | "down";
+}) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data: current, error: currentError } = await supabase
+    .from("curriculum_subblocks")
+    .select("id,topic_id,sort_order")
+    .eq("topic_id", input.topicId)
+    .eq("title", input.title)
+    .single();
+
+  if (currentError || !current) {
+    throw new Error(`Failed to load subblock for move: ${currentError?.message}`);
+  }
+
+  const comparator = input.direction === "up" ? "lt" : "gt";
+  const sortAscending = input.direction !== "up";
+  const { data: sibling, error: siblingError } = await supabase
+    .from("curriculum_subblocks")
+    .select("id,sort_order")
+    .eq("topic_id", current.topic_id)
+    [comparator]("sort_order", current.sort_order)
+    .order("sort_order", { ascending: sortAscending })
+    .limit(1)
+    .maybeSingle();
+
+  if (siblingError) {
+    throw new Error(`Failed to load sibling subblock for move: ${siblingError.message}`);
+  }
+
+  if (!sibling) {
+    return { moved: false };
+  }
+
+  const now = new Date().toISOString();
+  const { error: firstSwapError } = await supabase
+    .from("curriculum_subblocks")
+    .update({ sort_order: sibling.sort_order, updated_at: now })
+    .eq("id", current.id);
+
+  if (firstSwapError) {
+    throw new Error(`Failed to move subblock: ${firstSwapError.message}`);
+  }
+
+  const { error: secondSwapError } = await supabase
+    .from("curriculum_subblocks")
+    .update({ sort_order: current.sort_order, updated_at: now })
+    .eq("id", sibling.id);
+
+  if (secondSwapError) {
+    throw new Error(`Failed to move subblock: ${secondSwapError.message}`);
+  }
+
+  return { moved: true };
+}
+
 export async function listPersistedTopicIngestDetails() {
   if (!isSupabaseConfigured()) {
     return [];

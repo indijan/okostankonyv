@@ -417,6 +417,9 @@ export function StudyWorkspace({
   const [newTopicTitles, setNewTopicTitles] = useState<Record<string, string>>({});
   const [newSubblockTitles, setNewSubblockTitles] = useState<Record<string, string>>({});
   const [summaryEditor, setSummaryEditor] = useState<SummaryEditorState | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const workspaceRef = useRef<HTMLElement | null>(null);
+  const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>({});
   const summaryPollersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   useEffect(() => {
@@ -437,11 +440,39 @@ export function StudyWorkspace({
     };
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 320);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   function selectLearner(nextLearnerId: string) {
     const nextParams = new URLSearchParams(searchParams?.toString() ?? "");
     nextParams.set("child", nextLearnerId);
     router.replace(`${pathname}?${nextParams.toString()}`);
     router.refresh();
+  }
+
+  function setAllDetailsOpen(open: boolean) {
+    if (!workspaceRef.current) {
+      return;
+    }
+
+    const detailsElements = workspaceRef.current.querySelectorAll("details");
+    for (const detail of Array.from(detailsElements)) {
+      detail.open = open;
+    }
+  }
+
+  function toggleCardCollapse(key: string) {
+    setCollapsedCards((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
   }
 
   function renderInlineBold(text: string) {
@@ -1255,42 +1286,17 @@ export function StudyWorkspace({
     }
   }
 
-  async function applyReviewNote(
-    subject: string,
-    topicTitle: string,
-    sourceGroupLabel: string,
-    lessonId: string,
-    summaryType: "short_summary" | "key_points",
-    correctedContent: string,
-    note: string,
-  ) {
-    const key = `apply-note:${lessonId}:${summaryType}:${note}`;
+  async function copyReviewSuggestion(sourceGroupLabel: string, suggestion: string) {
+    const key = `copy-note:${sourceGroupLabel}:${suggestion}`;
     setActiveKey(key);
     setMessage(null);
     setError(null);
 
     try {
-      const response = await fetch("/api/summaries/apply-note", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lessonId, summaryType, correctedContent, note }),
-      });
-
-      const payload = await readJsonResponse<{ ok?: boolean; error?: string }>(response);
-
-      if (!response.ok) {
-        throw new Error(
-          formatRequestError(null, "A javítás beszúrása nem sikerult", {
-            status: response.status,
-            bodyError: payload.error,
-          }),
-        );
-      }
-
-      router.refresh();
-      setMessage(`${sourceGroupLabel}: javítás beszúrva.`);
-    } catch (applyError) {
-      setError(formatRequestError(applyError, "A javítás beszúrása nem sikerult"));
+      await navigator.clipboard.writeText(suggestion);
+      setMessage(`${sourceGroupLabel}: javaslat a vágólapra másolva.`);
+    } catch (copyError) {
+      setError(formatRequestError(copyError, "A javaslat másolása nem sikerult"));
     } finally {
       setActiveKey(null);
     }
@@ -2163,6 +2169,74 @@ export function StudyWorkspace({
     }
   }
 
+  async function moveTopic(
+    subjectId: string,
+    topicId: string,
+    topicTitle: string,
+    direction: "up" | "down",
+  ) {
+    const key = `move-topic:${topicId}:${direction}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/curriculum", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          entity: "topic",
+          action: "move",
+          id: topicId,
+          direction,
+        }),
+      });
+
+      const payload = await readJsonResponse<{ moved?: boolean; error?: string }>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "A blokk átrendezése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setSubjectState((current) =>
+        current.map((subject) => {
+          if (subject.id !== subjectId) {
+            return subject;
+          }
+
+          const fromIndex = subject.topics.findIndex((topic) => topic.id === topicId);
+          if (fromIndex < 0) {
+            return subject;
+          }
+
+          const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+          if (toIndex < 0 || toIndex >= subject.topics.length) {
+            return subject;
+          }
+
+          const topics = [...subject.topics];
+          const [movedTopic] = topics.splice(fromIndex, 1);
+          topics.splice(toIndex, 0, movedTopic);
+          return { ...subject, topics };
+        }),
+      );
+
+      if (payload.moved) {
+        setMessage(`${topicTitle}: blokk ${direction === "up" ? "feljebb" : "lejjebb"} került.`);
+      }
+
+      router.refresh();
+    } catch (moveError) {
+      setError(formatRequestError(moveError, "A blokk átrendezése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
   async function renameSubblock(
     subjectName: string,
     topicId: string,
@@ -2293,6 +2367,85 @@ export function StudyWorkspace({
     }
   }
 
+  async function moveSubblock(
+    subjectName: string,
+    topicId: string,
+    topicTitle: string,
+    label: string,
+    direction: "up" | "down",
+  ) {
+    const key = `move-subblock:${topicId}:${label}:${direction}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/curriculum", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          entity: "subblock",
+          action: "move",
+          topicId,
+          title: label,
+          direction,
+        }),
+      });
+
+      const payload = await readJsonResponse<{ moved?: boolean; error?: string }>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "Az alblokk átrendezése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setSubjectState((current) =>
+        current.map((subject) => {
+          if (subject.subject !== subjectName) {
+            return subject;
+          }
+
+          return {
+            ...subject,
+            topics: subject.topics.map((topic) => {
+              if (topic.id !== topicId) {
+                return topic;
+              }
+
+              const fromIndex = topic.subblocks.findIndex((subblock) => subblock.label === label);
+              if (fromIndex < 0) {
+                return topic;
+              }
+
+              const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+              if (toIndex < 0 || toIndex >= topic.subblocks.length) {
+                return topic;
+              }
+
+              const subblocks = [...topic.subblocks];
+              const [movedSubblock] = subblocks.splice(fromIndex, 1);
+              subblocks.splice(toIndex, 0, movedSubblock);
+              return { ...topic, subblocks };
+            }),
+          };
+        }),
+      );
+
+      if (payload.moved) {
+        setMessage(`${topicTitle}: alblokk ${direction === "up" ? "feljebb" : "lejjebb"} került.`);
+      }
+
+      router.refresh();
+    } catch (moveError) {
+      setError(formatRequestError(moveError, "Az alblokk átrendezése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
   function buildCombinedSummary(
     summaries: SubblockSummary[],
     type: "short_summary" | "child_friendly_explanation",
@@ -2407,7 +2560,10 @@ export function StudyWorkspace({
   );
 
   return (
-    <section className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_18px_48px_rgba(23,32,42,0.06)] backdrop-blur">
+    <section
+      ref={workspaceRef}
+      className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_18px_48px_rgba(23,32,42,0.06)] backdrop-blur"
+    >
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">Tanulási tér</h1>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -2442,6 +2598,20 @@ export function StudyWorkspace({
           }`}
         >
           Gyerek nézet
+        </button>
+        <button
+          type="button"
+          onClick={() => setAllDetailsOpen(true)}
+          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
+        >
+          Összes lenyitása
+        </button>
+        <button
+          type="button"
+          onClick={() => setAllDetailsOpen(false)}
+          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
+        >
+          Összes összecsukása
         </button>
       </div>
 
@@ -2840,15 +3010,50 @@ export function StudyWorkspace({
                 </section>
               ) : null}
 
-              {subject.topics.map((topic) => (
+              {subject.topics.map((topic, topicIndex) => {
+                const topicCardKey = `topic-card:${subject.subject}:${topic.title}`;
+                const isTopicCollapsed = collapsedCards[topicCardKey] === true;
+
+                return (
                 <section key={`${subject.subject}:${topic.title}`} className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-2xl font-semibold">{topic.title}</p>
                       <p className="mt-1 text-base text-[var(--ink)]">{topic.subblocks.length} alblokk</p>
                     </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleCardCollapse(topicCardKey)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] bg-white text-sm font-semibold"
+                        title={isTopicCollapsed ? "Blokk lenyitása" : "Blokk összecsukása"}
+                        aria-label={isTopicCollapsed ? "Blokk lenyitása" : "Blokk összecsukása"}
+                      >
+                        {isTopicCollapsed ? "▸" : "▾"}
+                      </button>
                     {mode === "parent" && isParentUnlocked && topic.id && subject.id ? (
-                      <div className="flex flex-wrap gap-2">
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveTopic(subject.id!, topic.id!, topic.title, "up")}
+                          disabled={activeKey === `move-topic:${topic.id}:up` || topicIndex === 0}
+                          className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-xs font-semibold disabled:opacity-50"
+                          title="Blokk feljebb"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveTopic(subject.id!, topic.id!, topic.title, "down")}
+                          disabled={
+                            activeKey === `move-topic:${topic.id}:down` ||
+                            topicIndex === subject.topics.length - 1
+                          }
+                          className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-xs font-semibold disabled:opacity-50"
+                          title="Blokk lejjebb"
+                        >
+                          ↓
+                        </button>
                         <button
                           type="button"
                           onClick={() => renameTopic(subject.id!, topic.id!, topic.title)}
@@ -2865,10 +3070,12 @@ export function StudyWorkspace({
                         >
                           Törlés
                         </button>
-                      </div>
+                      </>
                     ) : null}
+                    </div>
                   </div>
 
+                  {!isTopicCollapsed ? (
                   <div className="mt-4 space-y-4">
                     {mode === "parent" && isParentUnlocked && topic.id ? (
                       <div className="rounded-xl border border-dashed border-[var(--line)] bg-white px-4 py-4">
@@ -2897,7 +3104,9 @@ export function StudyWorkspace({
                         </div>
                       </div>
                     ) : null}
-                    {topic.subblocks.map((subblock) => {
+                    {topic.subblocks.map((subblock, subblockIndex) => {
+                      const subblockCardKey = `subblock-card:${subject.subject}:${topic.title}:${subblock.label}`;
+                      const isSubblockCollapsed = collapsedCards[subblockCardKey] === true;
                       const visibleSummaries =
                         mode === "child"
                           ? subblock.summaries.filter(
@@ -2982,12 +3191,58 @@ export function StudyWorkspace({
                                   ) : null}
                                 </div>
                               )}
+                              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
+                                <span className={`rounded-full px-2 py-1 ${subblock.status === "ready" ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Forrás</span>
+                                <span className={`rounded-full px-2 py-1 ${subblock.book ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Ingest</span>
+                                <span className={`rounded-full px-2 py-1 ${subblock.summaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Summary</span>
+                                <span className={`rounded-full px-2 py-1 ${subblock.summaryReviews.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Fact</span>
+                                <span className={`rounded-full px-2 py-1 ${childApprovedSummaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Kimehet</span>
+                              </div>
                             </div>
 
                             {mode === "parent" && isParentUnlocked ? (
                               <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCardCollapse(subblockCardKey)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-white text-base font-semibold"
+                                  title={isSubblockCollapsed ? "Alblokk lenyitása" : "Alblokk összecsukása"}
+                                  aria-label={isSubblockCollapsed ? "Alblokk lenyitása" : "Alblokk összecsukása"}
+                                >
+                                  {isSubblockCollapsed ? "▸" : "▾"}
+                                </button>
                                 {topic.id ? (
                                   <>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        moveSubblock(subject.subject, topic.id!, topic.title, subblock.label, "up")
+                                      }
+                                      disabled={
+                                        activeKey === `move-subblock:${topic.id}:${subblock.label}:up` ||
+                                        isSubblockBusy ||
+                                        subblockIndex === 0
+                                      }
+                                      className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                                      title="Alblokk feljebb"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        moveSubblock(subject.subject, topic.id!, topic.title, subblock.label, "down")
+                                      }
+                                      disabled={
+                                        activeKey === `move-subblock:${topic.id}:${subblock.label}:down` ||
+                                        isSubblockBusy ||
+                                        subblockIndex === topic.subblocks.length - 1
+                                      }
+                                      className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                                      title="Alblokk lejjebb"
+                                    >
+                                      ↓
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -3132,31 +3387,44 @@ export function StudyWorkspace({
                                   Visszavonom
                                 </button>
                               </div>
-                            ) : mode === "parent" ? null : subblock.book ? (
-                              <button
-                                type="button"
-                                onClick={() => requestReview(subblock.book!.id)}
-                                disabled={
-                                  subblock.progress?.status === "completed" ||
-                                  subblock.progress?.status === "needs_review" ||
-                                  isSubblockBusy ||
-                                  visibleSummaries.length === 0
-                                }
-                                className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:opacity-50"
-                              >
-                                {requestReviewKey && activeKey === requestReviewKey
-                                  ? "Küldés..."
-                                  : subblock.progress?.status === "completed"
-                                    ? "A szülő jóváhagyta"
-                                    : subblock.progress?.status === "needs_review"
-                                      ? "Jóváhagyásra vár"
-                                      : "Késznek jelölöm"}
-                              </button>
-                            ) : subblock.book ? (
-                              null
-                            ) : null}
+                            ) : mode === "parent" ? null : (
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCardCollapse(subblockCardKey)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-white text-base font-semibold"
+                                  title={isSubblockCollapsed ? "Alblokk lenyitása" : "Alblokk összecsukása"}
+                                  aria-label={isSubblockCollapsed ? "Alblokk lenyitása" : "Alblokk összecsukása"}
+                                >
+                                  {isSubblockCollapsed ? "▸" : "▾"}
+                                </button>
+                                {subblock.book ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => requestReview(subblock.book!.id)}
+                                    disabled={
+                                      subblock.progress?.status === "completed" ||
+                                      subblock.progress?.status === "needs_review" ||
+                                      isSubblockBusy ||
+                                      visibleSummaries.length === 0
+                                    }
+                                    className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:opacity-50"
+                                  >
+                                    {requestReviewKey && activeKey === requestReviewKey
+                                      ? "Küldés..."
+                                      : subblock.progress?.status === "completed"
+                                        ? "A szülő jóváhagyta"
+                                        : subblock.progress?.status === "needs_review"
+                                          ? "Jóváhagyásra vár"
+                                          : "Késznek jelölöm"}
+                                  </button>
+                                ) : null}
+                              </div>
+                            )}
                           </div>
 
+                          {!isSubblockCollapsed ? (
+                            <>
                           {mode === "parent" &&
                           summaryEditor &&
                           summaryEditor.subject === subject.subject &&
@@ -3430,30 +3698,24 @@ export function StudyWorkspace({
                                               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent-strong)]">
                                                 Javítási javaslat
                                               </p>
+                                              <p className="mt-1 text-xs text-[var(--ink)]">
+                                                A javaslatot másold ki, majd kézzel illeszd be az
+                                                {' '}`Összefoglaló szerkesztése` vagy `Vázlat szerkesztése` mezőbe.
+                                              </p>
                                               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--ink)]">
                                                 {review.improvementNotes.map((note) => {
-                                                  const applyKey = `apply-note:${review.lessonId}:${review.summaryType}:${note}`;
+                                                  const copyKey = `copy-note:${subblock.label}:${note}`;
 
                                                   return (
                                                     <li key={note} className="flex flex-wrap items-start justify-between gap-2">
                                                       <span className="flex-1">{note}</span>
                                                       <button
                                                         type="button"
-                                                        onClick={() =>
-                                                          applyReviewNote(
-                                                            subject.subject,
-                                                            topic.title,
-                                                            subblock.label,
-                                                            review.lessonId,
-                                                            review.summaryType,
-                                                            review.correctedContent,
-                                                            note,
-                                                          )
-                                                        }
-                                                        disabled={isSubblockBusy || !review.lessonId}
+                                                        onClick={() => void copyReviewSuggestion(subblock.label, note)}
+                                                        disabled={isSubblockBusy}
                                                         className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-xs font-semibold disabled:opacity-50"
                                                       >
-                                                        {activeKey === applyKey ? "Beszúrás..." : "Beszúr"}
+                                                        {activeKey === copyKey ? "Másolás..." : "Másolás"}
                                                       </button>
                                                     </li>
                                                   );
@@ -3657,12 +3919,16 @@ export function StudyWorkspace({
                               )}
                             </div>
                           )}
+                            </>
+                          ) : null}
                         </div>
                       );
                     })}
                   </div>
+                  ) : null}
                 </section>
-              ))}
+                );
+              })}
               {mode === "parent" && isParentUnlocked && subject.id ? (
                 <div className="rounded-[1.5rem] border border-dashed border-[var(--line)] bg-white px-5 py-5">
                   <p className="text-sm font-semibold text-[var(--ink)]">Új blokk ehhez a tantárgyhoz</p>
@@ -3694,6 +3960,17 @@ export function StudyWorkspace({
           </details>
         ))}
       </div>
+      {showScrollTop ? (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-50 rounded-full border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold shadow-[0_10px_24px_rgba(23,32,42,0.2)]"
+          title="Ugrás az oldal tetejére"
+          aria-label="Ugrás az oldal tetejére"
+        >
+          ↑
+        </button>
+      ) : null}
     </section>
   );
 }

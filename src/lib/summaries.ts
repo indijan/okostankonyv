@@ -58,6 +58,12 @@ function buildKnowledgeSearchQuery(input: {
   sourceGroupLabel?: string;
   childName?: string;
 }) {
+  if (input.sourceGroupLabel) {
+    return [input.subject, input.topicTitle, input.sourceGroupLabel]
+      .filter((value): value is string => Boolean(value && value.trim()))
+      .join(" ");
+  }
+
   return [
     input.childName,
     input.subject,
@@ -377,31 +383,6 @@ export async function generateLessonSummaries(options: GenerateLessonSummariesOp
 
   if (boundedLessons.length === 0) {
     throw new AppError(
-      "NO_FACTCHECK_TARGET",
-      "Nem találtam fact-check cél leckét ehhez az alblokkhoz.",
-    );
-  }
-
-  if (
-    boundedLessons.length === 0 &&
-    options.subject &&
-    options.topicTitle &&
-    options.sourceGroupLabel
-  ) {
-    const syntheticLesson = await ensureSubblockLesson({
-      supabase,
-      childName: options.childName,
-      subject: options.subject,
-      topicTitle: options.topicTitle,
-      sourceGroupLabel: options.sourceGroupLabel,
-      vectorStoreId: options.vectorStoreId,
-    });
-
-    boundedLessons.push(syntheticLesson);
-  }
-
-  if (boundedLessons.length === 0) {
-    throw new AppError(
       "NO_SUMMARY_TARGET",
       "Nem találtam summary-cél leckét ehhez az alblokkhoz.",
     );
@@ -632,8 +613,8 @@ export async function reviewLessonSummaries(options: GenerateLessonSummariesOpti
         sourceGroupLabel: options.sourceGroupLabel,
         childName: options.childName,
       }),
-      maxResults: options.sourceGroupLabel && options.topicTitle ? 4 : 6,
-      charLimit: 7000,
+      maxResults: options.sourceGroupLabel && options.topicTitle ? 6 : 8,
+      charLimit: 12000,
     });
 
     if (!sourceText) {
@@ -680,7 +661,7 @@ export async function reviewLessonSummaries(options: GenerateLessonSummariesOpti
           sourceText,
           summaryType: target.type,
           draftContent: target.content,
-          sourceTextLimit: 4200,
+          sourceTextLimit: 9000,
           draftContentLimit: 1800,
         }),
         120000,

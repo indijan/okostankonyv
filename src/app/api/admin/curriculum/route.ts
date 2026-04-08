@@ -8,6 +8,8 @@ import {
   deleteCurriculumSubject,
   deleteCurriculumSubblock,
   deleteCurriculumTopic,
+  moveCurriculumSubblock,
+  moveCurriculumTopic,
   updateCurriculumSubject,
   updateCurriculumSubblock,
   updateCurriculumTopic,
@@ -101,12 +103,16 @@ export async function PUT(request: Request) {
         entity?: "topic";
         id?: string;
         title?: string;
+        action?: "rename" | "move";
+        direction?: "up" | "down";
       }
     | {
         entity?: "subblock";
         topicId?: string;
         title?: string;
         nextTitle?: string;
+        action?: "rename" | "move";
+        direction?: "up" | "down";
       } = {};
 
   try {
@@ -126,6 +132,18 @@ export async function PUT(request: Request) {
     }
 
     if (body.entity === "topic") {
+      if (body.action === "move") {
+        if (!body.id || !body.direction) {
+          return NextResponse.json({ error: "Hianyzik a blokk azonositoja vagy a mozgatasi irany." }, { status: 400 });
+        }
+
+        const result = await moveCurriculumTopic({
+          id: body.id,
+          direction: body.direction,
+        });
+        return NextResponse.json(result);
+      }
+
       if (!body.id || !body.title?.trim()) {
         return NextResponse.json({ error: "Hianyzik a blokk azonositoja vagy az uj cime." }, { status: 400 });
       }
@@ -135,6 +153,19 @@ export async function PUT(request: Request) {
     }
 
     if (body.entity === "subblock") {
+      if (body.action === "move") {
+        if (!body.topicId || !body.title?.trim() || !body.direction) {
+          return NextResponse.json({ error: "Hianyzik az alblokk adata vagy a mozgatasi irany." }, { status: 400 });
+        }
+
+        const result = await moveCurriculumSubblock({
+          topicId: body.topicId,
+          title: body.title,
+          direction: body.direction,
+        });
+        return NextResponse.json(result);
+      }
+
       if (!body.topicId || !body.title?.trim() || !body.nextTitle?.trim()) {
         return NextResponse.json({ error: "Hianyzik az alblokk azonositoja vagy az uj cime." }, { status: 400 });
       }

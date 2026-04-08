@@ -145,7 +145,7 @@ export async function generateLessonKeyPointsDraft(input: {
       {
         role: "system",
         content:
-          "Csak a megadott forrasszoveg alapjan keszits 5-7 rovid, magyar nyelvu vazlatpontot. Minden pont egyetlen tomor allitas legyen. Fedd le a tema fo reszeit es reszmotívumait is, ha azok tenyleg szerepelnek a forrasszovegben. Feladatokat, kerdeseket, utasitasokat, oldalhivatkozasokat es forrasmegjeloleseket ne emelj be. Ne kezdd ugy, hogy 'A szoveg szerint' vagy 'Ebben a reszben'.",
+          "Csak a megadott forrasszoveg alapjan keszits 5-7 rovid, magyar nyelvu vazlatpontot. Minden pont egyetlen tomor allitas legyen. A lecke cime csak cimke: ha egy allitas nincs benne a forrasszovegben, ne ird bele. Fedd le a tema fo reszeit es reszmotívumait is, ha azok tenyleg szerepelnek a forrasszovegben. Feladatokat, kerdeseket, utasitasokat, oldalhivatkozasokat es forrasmegjeloleseket ne emelj be. Ne kezdd ugy, hogy 'A szoveg szerint' vagy 'Ebben a reszben'.",
       },
       {
         role: "user",
@@ -182,7 +182,7 @@ export async function generateLessonSummaryDraft(input: {
       {
         role: "system",
         content:
-          "Csak a megadott forrasszoveg alapjan irj magyar nyelvu, leiro, tenyszeru osszefoglalot. Ne adj hozza kulso tudast. 3-4 rovid, de informaciodus bekezdes legyen. A legfontosabb fogalmakat vagy neveket jelold **dupla csillaggal**. Maradjon benne minden fo resztema, ami a forrasban erdemben szerepel. Feladatokat, utasitasokat, kerdeseket, felszolitasokat, oldalhivatkozasokat es forrasmegjeloleseket hagyd ki. Ne kezdd ugy, hogy 'A szoveg szerint', 'Ebben a reszben', 'A lecke bemutatja'. Ha kapsz kulcspontokat, azokat hasznald szerkezeti tamaszkent, de csak olyan allitast irj le, amit a forrasszoveg alatamaszt.",
+          "Csak a megadott forrasszoveg alapjan irj magyar nyelvu, leiro, tenyszeru osszefoglalot. Ne adj hozza kulso tudast. A lecke cime csak cimke: ne kovetkeztess belole cselekmenyt vagy reszletet, ha az nincs a forrasban. 3-4 rovid, de informaciodus bekezdes legyen. A legfontosabb fogalmakat vagy neveket jelold **dupla csillaggal**. Maradjon benne minden fo resztema, ami a forrasban erdemben szerepel. Feladatokat, utasitasokat, kerdeseket, felszolitasokat, oldalhivatkozasokat es forrasmegjeloleseket hagyd ki. Ne kezdd ugy, hogy 'A szoveg szerint', 'Ebben a reszben', 'A lecke bemutatja'. Ha kapsz kulcspontokat, azokat hasznald szerkezeti tamaszkent, de csak olyan allitast irj le, amit a forrasszoveg alatamaszt.",
       },
       {
         role: "user",
