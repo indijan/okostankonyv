@@ -653,6 +653,270 @@ export async function applySummaryImprovement(options: {
   return { ok: true };
 }
 
+function buildSubblockBookTitles(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  const base = `${input.subject} - ${input.topicTitle} - ${input.sourceGroupLabel}`;
+  return [input.childName ? `${input.childName} - ${base}` : null, base].filter(
+    (value): value is string => Boolean(value),
+  );
+}
+
+async function resolveSubblockLessonIds(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const titles = buildSubblockBookTitles(input);
+
+  const { data: books, error: booksError } = await supabase
+    .from("books")
+    .select("id,title")
+    .in("title", titles)
+    .order("created_at", { ascending: false });
+
+  if (booksError) {
+    throw new Error(`Failed to load books for subblock: ${booksError.message}`);
+  }
+
+  const bookIds = (books ?? []).map((book) => book.id);
+  if (bookIds.length === 0) {
+    return [];
+  }
+
+  const { data: lessons, error: lessonsError } = await supabase
+    .from("lessons")
+    .select("id")
+    .in("book_id", bookIds)
+    .order("created_at", { ascending: false });
+
+  if (lessonsError) {
+    throw new Error(`Failed to load lessons for subblock: ${lessonsError.message}`);
+  }
+
+  return (lessons ?? []).map((lesson) => lesson.id);
+}
+
+async function resolveSubblockTargets(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const titles = buildSubblockBookTitles(input);
+
+  const { data: books, error: booksError } = await supabase
+    .from("books")
+    .select("id,title")
+    .in("title", titles)
+    .order("created_at", { ascending: false });
+
+  if (booksError) {
+    throw new Error(`Failed to load books for subblock: ${booksError.message}`);
+  }
+
+  const bookIds = (books ?? []).map((book) => book.id);
+  if (bookIds.length === 0) {
+    return { bookIds: [] as string[], lessonIds: [] as string[] };
+  }
+
+  const { data: lessons, error: lessonsError } = await supabase
+    .from("lessons")
+    .select("id")
+    .in("book_id", bookIds)
+    .order("created_at", { ascending: false });
+
+  if (lessonsError) {
+    throw new Error(`Failed to load lessons for subblock: ${lessonsError.message}`);
+  }
+
+  return {
+    bookIds,
+    lessonIds: (lessons ?? []).map((lesson) => lesson.id),
+  };
+}
+
+export async function clearSubblockSummaries(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  const lessonIds = await resolveSubblockLessonIds(input);
+
+  if (lessonIds.length === 0) {
+    return { ok: true, deletedSummaries: 0 };
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase
+    .from("lesson_summaries")
+    .delete()
+    .in("lesson_id", lessonIds)
+    .in("type", ["short_summary", "key_points", "child_friendly_explanation"]);
+
+  if (error) {
+    throw new Error(`Failed to clear summaries: ${error.message}`);
+  }
+
+  return { ok: true, deletedSummaries: lessonIds.length };
+}
+
+export async function clearSubblockSummaryReviews(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  const lessonIds = await resolveSubblockLessonIds(input);
+
+  if (lessonIds.length === 0) {
+    return { ok: true, deletedReviews: 0 };
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase
+    .from("lesson_summary_reviews")
+    .delete()
+    .in("lesson_id", lessonIds)
+    .in("summary_type", ["short_summary", "key_points"]);
+
+  if (error) {
+    throw new Error(`Failed to clear summary reviews: ${error.message}`);
+  }
+
+  return { ok: true, deletedReviews: lessonIds.length };
+}
+
+export async function updateSubblockSummaryContent(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+  summaryType: "short_summary" | "key_points";
+  content: string;
+}) {
+  const lessonIds = await resolveSubblockLessonIds(input);
+
+  if (lessonIds.length === 0) {
+    throw new Error("Nem találtam szerkeszthető summary rekordot ehhez az alblokkhoz.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const normalizedContent = input.content.trim();
+
+  if (!normalizedContent) {
+    throw new Error("A tartalom nem lehet üres.");
+  }
+
+  const { error: deleteError } = await supabase
+    .from("lesson_summaries")
+    .delete()
+    .in("lesson_id", lessonIds)
+    .eq("type", input.summaryType);
+
+  if (deleteError) {
+    throw new Error(`Failed to clear old summary rows: ${deleteError.message}`);
+  }
+
+  const rows = lessonIds.map((lessonId) => ({
+    lesson_id: lessonId,
+    type: input.summaryType,
+    content: normalizedContent,
+    source_mode: "knowledge_base" as const,
+    grounding_score: 80,
+    factuality_score: 80,
+    approved: false,
+  }));
+
+  const { error: insertError } = await supabase.from("lesson_summaries").insert(rows);
+
+  if (insertError) {
+    throw new Error(`Failed to save edited summary: ${insertError.message}`);
+  }
+
+  return { ok: true, updatedLessons: lessonIds.length };
+}
+
+export async function clearSubblockIngestData(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+}) {
+  const { bookIds, lessonIds } = await resolveSubblockTargets(input);
+  if (bookIds.length === 0) {
+    return { ok: true, deletedBooks: 0, deletedLessons: 0 };
+  }
+
+  const supabase = createSupabaseServerClient();
+
+  if (lessonIds.length > 0) {
+    const { error: quizError } = await supabase.from("quiz_items").delete().in("lesson_id", lessonIds);
+    if (quizError) {
+      throw new Error(`Failed to clear quiz items: ${quizError.message}`);
+    }
+
+    const { error: summaryReviewError } = await supabase
+      .from("lesson_summary_reviews")
+      .delete()
+      .in("lesson_id", lessonIds);
+    if (summaryReviewError) {
+      throw new Error(`Failed to clear summary reviews: ${summaryReviewError.message}`);
+    }
+
+    const { error: summaryError } = await supabase.from("lesson_summaries").delete().in("lesson_id", lessonIds);
+    if (summaryError) {
+      throw new Error(`Failed to clear summaries: ${summaryError.message}`);
+    }
+
+    const { error: chunkError } = await supabase.from("lesson_chunks").delete().in("lesson_id", lessonIds);
+    if (chunkError) {
+      throw new Error(`Failed to clear chunks: ${chunkError.message}`);
+    }
+
+    const { error: lessonError } = await supabase.from("lessons").delete().in("id", lessonIds);
+    if (lessonError) {
+      throw new Error(`Failed to clear lessons: ${lessonError.message}`);
+    }
+  }
+
+  const progressQuery = supabase.from("book_progress").delete().in("book_id", bookIds);
+  const { error: progressError } = input.childName
+    ? await progressQuery.eq("child_name", input.childName)
+    : await progressQuery;
+
+  if (progressError) {
+    throw new Error(`Failed to clear progress: ${progressError.message}`);
+  }
+
+  const { error: ingestJobError } = await supabase.from("ingest_jobs").delete().in("book_id", bookIds);
+  if (ingestJobError) {
+    throw new Error(`Failed to clear ingest jobs: ${ingestJobError.message}`);
+  }
+
+  const { error: bookError } = await supabase.from("books").delete().in("id", bookIds);
+  if (bookError) {
+    throw new Error(`Failed to clear books: ${bookError.message}`);
+  }
+
+  return { ok: true, deletedBooks: bookIds.length, deletedLessons: lessonIds.length };
+}
+
 export async function listPersistedTopicQuizItems() {
   if (!isSupabaseConfigured()) {
     return [];

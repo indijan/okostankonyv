@@ -195,6 +195,19 @@ type QuizResponse = {
   }>;
 };
 
+type ManageSummaryResponse = {
+  ok?: boolean;
+  error?: string;
+};
+
+type SummaryEditorState = {
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+  type: "summary" | "key_points";
+  content: string;
+};
+
 type ProgressResponse = {
   status: string;
   score?: number;
@@ -402,6 +415,7 @@ export function StudyWorkspace({
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newTopicTitles, setNewTopicTitles] = useState<Record<string, string>>({});
   const [newSubblockTitles, setNewSubblockTitles] = useState<Record<string, string>>({});
+  const [summaryEditor, setSummaryEditor] = useState<SummaryEditorState | null>(null);
   const summaryPollersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   useEffect(() => {
@@ -983,6 +997,216 @@ export function StudyWorkspace({
       router.refresh();
     } catch (factCheckError) {
       setError(formatRequestError(factCheckError, "A fact check nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
+  async function clearSubblockSummaries(subject: string, topicTitle: string, sourceGroupLabel: string) {
+    if (!window.confirm(`Törlöd az összes összefoglalót és vázlatot ennél: ${sourceGroupLabel}?`)) {
+      return;
+    }
+
+    const key = `clear-summaries:${subject}:${topicTitle}:${sourceGroupLabel}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summaries/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "clear_summaries",
+          childName: learnerName,
+          subject,
+          topicTitle,
+          sourceGroupLabel,
+        }),
+      });
+      const payload = await readJsonResponse<ManageSummaryResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "Az összefoglalók törlése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setMessage(`${sourceGroupLabel}: összefoglalók és vázlat törölve.`);
+      router.refresh();
+    } catch (manageError) {
+      setError(formatRequestError(manageError, "Az összefoglalók törlése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
+  async function clearSubblockFactChecks(subject: string, topicTitle: string, sourceGroupLabel: string) {
+    if (!window.confirm(`Törlöd az összes fact check eredményt ennél: ${sourceGroupLabel}?`)) {
+      return;
+    }
+
+    const key = `clear-reviews:${subject}:${topicTitle}:${sourceGroupLabel}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summaries/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "clear_reviews",
+          childName: learnerName,
+          subject,
+          topicTitle,
+          sourceGroupLabel,
+        }),
+      });
+      const payload = await readJsonResponse<ManageSummaryResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "A fact check törlése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setMessage(`${sourceGroupLabel}: fact check eredmények törölve.`);
+      router.refresh();
+    } catch (manageError) {
+      setError(formatRequestError(manageError, "A fact check törlése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
+  async function editSubblockSummary(
+    subject: string,
+    topicTitle: string,
+    sourceGroupLabel: string,
+    currentContent: string,
+  ) {
+    setSummaryEditor({
+      subject,
+      topicTitle,
+      sourceGroupLabel,
+      type: "summary",
+      content: currentContent,
+    });
+  }
+
+  async function editSubblockKeyPoints(
+    subject: string,
+    topicTitle: string,
+    sourceGroupLabel: string,
+    currentPoints: string[],
+  ) {
+    setSummaryEditor({
+      subject,
+      topicTitle,
+      sourceGroupLabel,
+      type: "key_points",
+      content: currentPoints.join("\n"),
+    });
+  }
+
+  async function saveSummaryEditor() {
+    if (!summaryEditor) {
+      return;
+    }
+
+    const content = summaryEditor.content.trim();
+    if (!content) {
+      setError("A szerkesztett tartalom nem lehet üres.");
+      return;
+    }
+
+    const key = `save-editor:${summaryEditor.subject}:${summaryEditor.topicTitle}:${summaryEditor.sourceGroupLabel}:${summaryEditor.type}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summaries/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: summaryEditor.type === "summary" ? "update_summary" : "update_key_points",
+          childName: learnerName,
+          subject: summaryEditor.subject,
+          topicTitle: summaryEditor.topicTitle,
+          sourceGroupLabel: summaryEditor.sourceGroupLabel,
+          content,
+        }),
+      });
+      const payload = await readJsonResponse<ManageSummaryResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "A szerkesztett tartalom mentése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setMessage(
+        `${summaryEditor.sourceGroupLabel}: ${
+          summaryEditor.type === "summary" ? "összefoglaló" : "vázlat"
+        } mentve.`,
+      );
+      setSummaryEditor(null);
+      router.refresh();
+    } catch (manageError) {
+      setError(formatRequestError(manageError, "A szerkesztett tartalom mentése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
+  async function clearSubblockIngest(subject: string, topicTitle: string, sourceGroupLabel: string) {
+    if (
+      !window.confirm(
+        `Törlöd az ingestelt adatokat ennél: ${sourceGroupLabel}? Ez törli a kapcsolódó könyv/leckék/chunkok adatait is.`,
+      )
+    ) {
+      return;
+    }
+
+    const key = `clear-ingest:${subject}:${topicTitle}:${sourceGroupLabel}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summaries/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "clear_ingest",
+          childName: learnerName,
+          subject,
+          topicTitle,
+          sourceGroupLabel,
+        }),
+      });
+      const payload = await readJsonResponse<ManageSummaryResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, "Az ingest törlése nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setMessage(`${sourceGroupLabel}: ingestelt adatok törölve.`);
+      router.refresh();
+    } catch (manageError) {
+      setError(formatRequestError(manageError, "Az ingest törlése nem sikerult"));
     } finally {
       setActiveKey(null);
     }
@@ -2628,6 +2852,8 @@ export function StudyWorkspace({
 
                       const hasVectorStore = Boolean(subject.knowledgeBase?.vectorStoreId);
                       const canSummarize = Boolean(subblock.book);
+                      const combinedSummary = buildCombinedSummary(subblock.summaries, "short_summary") ?? "";
+                      const combinedKeyPoints = buildKeyPoints(subblock.summaries);
                       const seedKey = `seed:${subject.subject}:${topic.title}:${subblock.label}`;
                       const summaryKey = `summary:${subject.subject}:${topic.title}:${subblock.label}`;
                       const factCheckKey = `fact-check:${subject.subject}:${topic.title}:${subblock.label}`;
@@ -2780,6 +3006,50 @@ export function StudyWorkspace({
                                 >
                                   {activeKey === factCheckKey ? "Fact check..." : "Fact check"}
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    editSubblockSummary(subject.subject, topic.title, subblock.label, combinedSummary)
+                                  }
+                                  disabled={!combinedSummary || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Összefoglaló szerkesztése
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    editSubblockKeyPoints(subject.subject, topic.title, subblock.label, combinedKeyPoints)
+                                  }
+                                  disabled={combinedKeyPoints.length === 0 || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Vázlat szerkesztése
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => clearSubblockSummaries(subject.subject, topic.title, subblock.label)}
+                                  disabled={subblock.summaries.length === 0 || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Összefoglalók törlése
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => clearSubblockFactChecks(subject.subject, topic.title, subblock.label)}
+                                  disabled={subblock.summaryReviews.length === 0 || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Fact check törlése
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => clearSubblockIngest(subject.subject, topic.title, subblock.label)}
+                                  disabled={!subblock.book || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Ingest törlése
+                                </button>
                               </div>
                             ) : mode === "parent" ? null : subblock.book ? (
                               <button
@@ -2805,6 +3075,48 @@ export function StudyWorkspace({
                               null
                             ) : null}
                           </div>
+
+                          {mode === "parent" &&
+                          summaryEditor &&
+                          summaryEditor.subject === subject.subject &&
+                          summaryEditor.topicTitle === topic.title &&
+                          summaryEditor.sourceGroupLabel === subblock.label ? (
+                            <div className="mt-4 rounded-xl border border-[var(--line)] bg-white p-4">
+                              <p className="text-sm font-semibold text-[var(--ink)]">
+                                {summaryEditor.type === "summary" ? "Összefoglaló szerkesztése" : "Vázlat szerkesztése"}
+                              </p>
+                              <textarea
+                                value={summaryEditor.content}
+                                onChange={(event) =>
+                                  setSummaryEditor((current) =>
+                                    current ? { ...current, content: event.target.value } : current,
+                                  )
+                                }
+                                rows={12}
+                                className="mt-3 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ink)] outline-none"
+                              />
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void saveSummaryEditor()}
+                                  disabled={
+                                    activeKey ===
+                                    `save-editor:${summaryEditor.subject}:${summaryEditor.topicTitle}:${summaryEditor.sourceGroupLabel}:${summaryEditor.type}`
+                                  }
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                                >
+                                  Mentés
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSummaryEditor(null)}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
+                                >
+                                  Mégse
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
 
                           {mode === "parent" ? (
                             isParentUnlocked ? (
