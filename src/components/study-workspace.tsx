@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 
 import { formatRequestError, readJsonResponse } from "@/lib/http";
 
@@ -418,7 +419,7 @@ export function StudyWorkspace({
   const [newSubblockTitles, setNewSubblockTitles] = useState<Record<string, string>>({});
   const [summaryEditor, setSummaryEditor] = useState<SummaryEditorState | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const workspaceRef = useRef<HTMLElement | null>(null);
+  const [isClientMounted, setIsClientMounted] = useState(false);
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>({});
   const summaryPollersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
@@ -441,8 +442,13 @@ export function StudyWorkspace({
   }, []);
 
   useEffect(() => {
+    setIsClientMounted(true);
+  }, []);
+
+  useEffect(() => {
     const onScroll = () => {
-      setShowScrollTop(window.scrollY > 320);
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      setShowScrollTop(scrollTop > 120);
     };
 
     onScroll();
@@ -455,17 +461,6 @@ export function StudyWorkspace({
     nextParams.set("child", nextLearnerId);
     router.replace(`${pathname}?${nextParams.toString()}`);
     router.refresh();
-  }
-
-  function setAllDetailsOpen(open: boolean) {
-    if (!workspaceRef.current) {
-      return;
-    }
-
-    const detailsElements = workspaceRef.current.querySelectorAll("details");
-    for (const detail of Array.from(detailsElements)) {
-      detail.open = open;
-    }
   }
 
   function toggleCardCollapse(key: string) {
@@ -2560,10 +2555,7 @@ export function StudyWorkspace({
   );
 
   return (
-    <section
-      ref={workspaceRef}
-      className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_18px_48px_rgba(23,32,42,0.06)] backdrop-blur"
-    >
+    <section className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_18px_48px_rgba(23,32,42,0.06)] backdrop-blur">
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">Tanulási tér</h1>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -2598,20 +2590,6 @@ export function StudyWorkspace({
           }`}
         >
           Gyerek nézet
-        </button>
-        <button
-          type="button"
-          onClick={() => setAllDetailsOpen(true)}
-          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
-        >
-          Összes lenyitása
-        </button>
-        <button
-          type="button"
-          onClick={() => setAllDetailsOpen(false)}
-          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
-        >
-          Összes összecsukása
         </button>
       </div>
 
@@ -2694,26 +2672,32 @@ export function StudyWorkspace({
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Kész alblokkok</p>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+              <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
+                ▾ Kész alblokkok
+              </summary>
               <p className="mt-2 text-3xl font-semibold">{completedCount} / {totalSubblocks}</p>
               <p className="mt-2 text-sm text-[var(--ink)]">{percentage(completedCount, totalSubblocks)}% kész</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Hiányzó források</p>
+            </details>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+              <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
+                ▾ Hiányzó források
+              </summary>
               <p className="mt-2 text-3xl font-semibold">{totalMissingSources}</p>
               <p className="mt-2 text-sm text-[var(--ink)]">Ennyi alblokk vár még linkpótlásra.</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Kitöltött kvízek</p>
+            </details>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+              <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
+                ▾ Kitöltött kvízek
+              </summary>
               <p className="mt-2 text-3xl font-semibold">{totalQuizCompleted}</p>
               <p className="mt-2 text-sm text-[var(--ink)]">Ennyi alblokkhoz van már elmentett kvízeredmény.</p>
-            </div>
+            </details>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
-            <div className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
-              <p className="text-lg font-semibold">Tantárgyi áttekintés</p>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+              <summary className="cursor-pointer list-none text-lg font-semibold">▾ Tantárgyi áttekintés</summary>
               <div className="mt-4 space-y-4">
                 {parentSubjectStats.map((stat) => (
                   <div key={stat.subject} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-4">
@@ -2734,10 +2718,10 @@ export function StudyWorkspace({
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
 
-            <div className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
-              <p className="text-lg font-semibold">Blokkok állapota</p>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+              <summary className="cursor-pointer list-none text-lg font-semibold">▾ Blokkok állapota</summary>
               <div className="mt-4 space-y-3">
                 {parentTopicStats.map((stat) => (
                   <div key={`${stat.subject}:${stat.title}`} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-4">
@@ -2758,7 +2742,7 @@ export function StudyWorkspace({
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           </div>
         </div>
       ) : null}
@@ -2832,10 +2816,12 @@ export function StudyWorkspace({
 
             <div className="mt-5 space-y-4">
               {mode === "parent" && isParentUnlocked && subject.id ? (
-                <section className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
+                <details className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5" open>
+                  <summary className="cursor-pointer list-none text-xl font-semibold text-[var(--ink)]">
+                    ▾ Tantárgyi PDF tudásbázis
+                  </summary>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <p className="text-xl font-semibold">Tantárgyi PDF tudásbázis</p>
                       <p className="mt-1 text-base text-[var(--ink)]">
                         Átállási alap a linkes ingest helyett. A következő körben ide jön a PDF feltöltés és a vector store build.
                       </p>
@@ -3007,7 +2993,7 @@ export function StudyWorkspace({
                       ) : null}
                     </div>
                   ) : null}
-                </section>
+                </details>
               ) : null}
 
               {subject.topics.map((topic, topicIndex) => {
@@ -3191,13 +3177,15 @@ export function StudyWorkspace({
                                   ) : null}
                                 </div>
                               )}
-                              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
-                                <span className={`rounded-full px-2 py-1 ${subblock.status === "ready" ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Forrás</span>
-                                <span className={`rounded-full px-2 py-1 ${subblock.book ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Ingest</span>
-                                <span className={`rounded-full px-2 py-1 ${subblock.summaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Summary</span>
-                                <span className={`rounded-full px-2 py-1 ${subblock.summaryReviews.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Fact</span>
-                                <span className={`rounded-full px-2 py-1 ${childApprovedSummaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Kimehet</span>
-                              </div>
+                              {mode === "parent" ? (
+                                <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
+                                  <span className={`rounded-full px-2 py-1 ${subblock.status === "ready" ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Forrás</span>
+                                  <span className={`rounded-full px-2 py-1 ${subblock.book ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Ingest</span>
+                                  <span className={`rounded-full px-2 py-1 ${subblock.summaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Summary</span>
+                                  <span className={`rounded-full px-2 py-1 ${subblock.summaryReviews.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Fact</span>
+                                  <span className={`rounded-full px-2 py-1 ${childApprovedSummaries.length > 0 ? "bg-[#e8f7e1] text-[#34591d]" : "bg-[#f2f2f2]"}`}>Kimehet</span>
+                                </div>
+                              ) : null}
                             </div>
 
                             {mode === "parent" && isParentUnlocked ? (
@@ -3472,8 +3460,10 @@ export function StudyWorkspace({
                             <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                               <div className="space-y-3">
                                 {subblock.summaryJob ? (
-                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-                                    <p className="text-sm font-semibold text-[var(--ink)]">Summary job</p>
+                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                    <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                      {subblock.summaryJob.status === "failed" ? "▸ Summary job" : "▾ Summary job"}
+                                    </summary>
                                     <div className="mt-2 flex flex-wrap items-center gap-2">
                                       <span className="rounded-full bg-[#eef7ff] px-3 py-1 text-xs font-semibold text-[#14507a]">
                                         {subblock.summaryJob.status}
@@ -3492,11 +3482,13 @@ export function StudyWorkspace({
                                         {subblock.summaryJob.errorMessage}
                                       </p>
                                     ) : null}
-                                  </div>
+                                  </details>
                                 ) : null}
 
-                                <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-                                  <p className="text-sm font-semibold text-[var(--ink)]">Forrás</p>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                    ▾ Forrás
+                                  </summary>
                                   <p className="mt-1 text-base text-[var(--ink)]">
                                     {subblock.status === "ready" ? "Ready" : "Hiányzik"}
                                   </p>
@@ -3553,10 +3545,12 @@ export function StudyWorkspace({
                                       </button>
                                     </div>
                                   </div>
-                                </div>
+                                </details>
 
-                                <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-                                  <p className="text-sm font-semibold text-[var(--ink)]">Ingestelt forrás</p>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                    ▾ Ingestelt forrás
+                                  </summary>
                                   {subblock.book ? (
                                     <>
                                       <p className="mt-1 text-base text-[var(--ink)]">{subblock.book.title}</p>
@@ -3598,10 +3592,12 @@ export function StudyWorkspace({
                                   ) : (
                                     <p className="mt-1 text-sm text-[var(--ink)]">Még nincs ingestelve.</p>
                                   )}
-                                </div>
+                                </details>
 
-                                <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-                                  <p className="text-sm font-semibold text-[var(--ink)]">Gyerek készültsége</p>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                    ▾ Gyerek készültsége
+                                  </summary>
                                   <p className="mt-1 text-base font-semibold text-[var(--ink)]">
                                     {subblock.progress?.status === "completed"
                                       ? "Kész"
@@ -3646,11 +3642,13 @@ export function StudyWorkspace({
                                       Kvíz: {subblock.progress.quizScore}/{subblock.progress.quizTotal}
                                     </p>
                                   ) : null}
-                                </div>
+                                </details>
 
                                 {subblock.summaryReviews.length > 0 ? (
-                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-                                    <p className="text-sm font-semibold text-[var(--ink)]">Fact check a leckékhez</p>
+                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                    <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                      ▾ Fact check a leckékhez
+                                    </summary>
                                     <p className="mt-1 text-xs text-[var(--ink)]">
                                       Az alblokk több leckéből is állhat, ezért a review-k leckénként külön jelennek meg.
                                     </p>
@@ -3726,51 +3724,55 @@ export function StudyWorkspace({
                                         </div>
                                       ))}
                                     </div>
-                                  </div>
+                                  </details>
                                 ) : null}
                               </div>
 
                               <div className="space-y-3">
-                                <p className="text-sm font-semibold text-[var(--ink)]">Tananyag az alblokkhoz</p>
-                                {!buildCombinedSummary(subblock.summaries, "short_summary") ? (
-                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)]">
-                                    Ehhez az alblokkhoz még nincs summary.
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--ink)]">
-                                      Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(subblock.summaries))}
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
+                                    ▾ Tananyag az alblokkhoz
+                                  </summary>
+                                  {!buildCombinedSummary(subblock.summaries, "short_summary") ? (
+                                    <div className="mt-3 text-sm text-[var(--ink)]">
+                                      Ehhez az alblokkhoz még nincs summary.
                                     </div>
-                                    {buildKeyPoints(subblock.summaries).length > 0 ? (
+                                  ) : (
+                                    <div className="mt-3 space-y-3">
+                                      <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--ink)]">
+                                        Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(subblock.summaries))}
+                                      </div>
+                                      {buildKeyPoints(subblock.summaries).length > 0 ? (
+                                        <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                          <summary className="cursor-pointer list-none">
+                                            <div>
+                                              <p className="font-semibold">{subblock.label}</p>
+                                              <p className="text-sm text-[var(--ink)]">Vázlatpontok</p>
+                                            </div>
+                                          </summary>
+                                          <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-8 text-[var(--ink)]">
+                                            {buildKeyPoints(subblock.summaries).map((point) => (
+                                              <li key={point}>{point}</li>
+                                            ))}
+                                          </ul>
+                                        </details>
+                                      ) : null}
                                       <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
                                         <summary className="cursor-pointer list-none">
-                                          <div>
-                                            <p className="font-semibold">{subblock.label}</p>
-                                            <p className="text-sm text-[var(--ink)]">Vázlatpontok</p>
+                                          <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                              <p className="font-semibold">{subblock.label}</p>
+                                              <p className="text-sm text-[var(--ink)]">Összefoglaló</p>
+                                            </div>
                                           </div>
                                         </summary>
-                                        <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-8 text-[var(--ink)]">
-                                          {buildKeyPoints(subblock.summaries).map((point) => (
-                                            <li key={point}>{point}</li>
-                                          ))}
-                                        </ul>
-                                      </details>
-                                    ) : null}
-                                    <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
-                                      <summary className="cursor-pointer list-none">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                          <div>
-                                            <p className="font-semibold">{subblock.label}</p>
-                                            <p className="text-sm text-[var(--ink)]">Összefoglaló</p>
-                                          </div>
+                                        <div className="mt-3 whitespace-pre-wrap text-base leading-8 text-[var(--ink)]">
+                                          {renderInlineBold(buildCombinedSummary(subblock.summaries, "short_summary") ?? "")}
                                         </div>
-                                      </summary>
-                                      <div className="mt-3 whitespace-pre-wrap text-base leading-8 text-[var(--ink)]">
-                                        {renderInlineBold(buildCombinedSummary(subblock.summaries, "short_summary") ?? "")}
-                                      </div>
-                                    </details>
-                                  </div>
-                                )}
+                                      </details>
+                                    </div>
+                                  )}
+                                </details>
                               </div>
                             </div>
                             ) : null
@@ -3789,7 +3791,7 @@ export function StudyWorkspace({
                                     <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]" open>
                                       <summary className="cursor-pointer list-none">
                                         <div>
-                                          <p className="text-[1.1rem] font-semibold text-[#1f252c]">{subblock.label}</p>
+                                          <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
                                           <p className="text-sm text-[#424b55]">Vázlatos kivonat</p>
                                         </div>
                                       </summary>
@@ -3807,7 +3809,7 @@ export function StudyWorkspace({
                                     <summary className="cursor-pointer list-none">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                           <div>
-                                            <p className="text-[1.25rem] font-semibold text-[#1f252c]">{subblock.label}</p>
+                                            <p className="text-[1.25rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
                                             <p className="text-sm text-[#424b55]">Összefoglaló</p>
                                           </div>
                                           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55]">
@@ -3828,7 +3830,7 @@ export function StudyWorkspace({
                                       <summary className="cursor-pointer list-none">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                           <div>
-                                            <p className="text-[1.1rem] font-semibold text-[#1f252c]">Gyakorló kvíz</p>
+                                            <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ Gyakorló kvíz</p>
                                             <p className="text-sm text-[#424b55]">
                                               {subblock.quizItems.length} kérdés
                                               {typeof subblock.progress?.quizScore === "number" &&
@@ -3845,15 +3847,32 @@ export function StudyWorkspace({
                                             <p className="text-base font-semibold text-[#1f252c]">
                                               {index + 1}. {quizItem.question}
                                             </p>
+                                            {(() => {
+                                              const resultEntry = quizResults[subblock.book?.id ?? ""]?.answers[index];
+                                              return resultEntry ? (
+                                                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#424b55]">
+                                                  {resultEntry.selected === quizItem.correctAnswer
+                                                    ? "✅ Helyes válasz"
+                                                    : "❌ Hibás válasz"}
+                                                </p>
+                                              ) : null;
+                                            })()}
                                             <ul className="mt-3 space-y-2">
                                               {quizItem.options.map((option) => (
                                                 <li key={option}>
+                                                  {(() => {
+                                                    const resultEntry = quizResults[subblock.book?.id ?? ""]?.answers[index];
+                                                    const isReviewed = Boolean(resultEntry);
+                                                    const isCorrectOption = option === quizItem.correctAnswer;
+                                                    const isSelectedOption = resultEntry?.selected === option;
+
+                                                    return (
                                                   <label
                                                     className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2 text-base ${
-                                                      quizResults[subblock.book?.id ?? ""]?.answers[index]
-                                                        ? option === quizItem.correctAnswer
+                                                      isReviewed
+                                                        ? isCorrectOption
                                                           ? "border-[#8bc34a] bg-[#f3ffe8] text-[#1f3a12]"
-                                                          : quizResults[subblock.book?.id ?? ""]?.answers[index]?.selected === option
+                                                          : isSelectedOption
                                                             ? "border-[#ef9a9a] bg-[#fff1f1] text-[#6a1f1f]"
                                                             : "border-[#eadfcb] bg-white text-[#28313a]"
                                                         : "border-[#eadfcb] bg-white text-[#28313a]"
@@ -3872,8 +3891,22 @@ export function StudyWorkspace({
                                                       }
                                                       className="mt-1"
                                                     />
-                                                    <span>{option}</span>
+                                                    <span className="flex flex-1 items-center justify-between gap-3">
+                                                      <span>{option}</span>
+                                                      {isReviewed && isCorrectOption ? (
+                                                        <span className="rounded-full bg-[#dff5c7] px-2 py-0.5 text-xs font-semibold text-[#2f5f12]">
+                                                          ✅ Helyes
+                                                        </span>
+                                                      ) : null}
+                                                      {isReviewed && isSelectedOption && !isCorrectOption ? (
+                                                        <span className="rounded-full bg-[#ffd9d9] px-2 py-0.5 text-xs font-semibold text-[#7a2424]">
+                                                          ❌ A te válaszod
+                                                        </span>
+                                                      ) : null}
+                                                    </span>
                                                   </label>
+                                                    );
+                                                  })()}
                                                 </li>
                                               ))}
                                             </ul>
@@ -3960,17 +3993,21 @@ export function StudyWorkspace({
           </details>
         ))}
       </div>
-      {showScrollTop ? (
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-6 z-50 rounded-full border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold shadow-[0_10px_24px_rgba(23,32,42,0.2)]"
-          title="Ugrás az oldal tetejére"
-          aria-label="Ugrás az oldal tetejére"
-        >
-          ↑
-        </button>
-      ) : null}
+      {isClientMounted && showScrollTop
+        ? createPortal(
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="fixed bottom-6 right-6 z-[9999] inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-xl font-bold text-white shadow-[0_14px_34px_rgba(23,32,42,0.35)] transition hover:bg-[var(--accent-strong)]"
+              style={{ position: "fixed", right: "1.5rem", bottom: "1.5rem" }}
+              title="Ugrás az oldal tetejére"
+              aria-label="Ugrás az oldal tetejére"
+            >
+              ↑
+            </button>,
+            document.body,
+          )
+        : null}
     </section>
   );
 }
