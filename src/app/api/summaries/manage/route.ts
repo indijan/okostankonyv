@@ -5,12 +5,13 @@ import {
   clearSubblockIngestData,
   clearSubblockSummaries,
   clearSubblockSummaryReviews,
+  setSubblockSummaryApproval,
   updateSubblockSummaryContent,
 } from "@/lib/repositories";
 
 type ManageSummaryRequest =
   | {
-      action: "clear_summaries" | "clear_reviews" | "clear_ingest";
+      action: "clear_summaries" | "clear_reviews" | "clear_ingest" | "publish_summaries" | "unpublish_summaries";
       childName?: string;
       subject?: string;
       topicTitle?: string;
@@ -72,6 +73,17 @@ export async function POST(request: Request) {
         subject: body.subject,
         topicTitle: body.topicTitle,
         sourceGroupLabel: body.sourceGroupLabel,
+      });
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "publish_summaries" || body.action === "unpublish_summaries") {
+      const result = await setSubblockSummaryApproval({
+        childName: body.childName,
+        subject: body.subject,
+        topicTitle: body.topicTitle,
+        sourceGroupLabel: body.sourceGroupLabel,
+        approved: body.action === "publish_summaries",
       });
       return NextResponse.json(result);
     }

@@ -475,7 +475,7 @@ export async function listPersistedTopicSummaries() {
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase
       .from("lesson_summaries")
-      .select("id,type,content,source_mode,created_at,lesson:lessons(id,title,book:books(id,title,subject))")
+      .select("id,type,content,source_mode,approved,created_at,lesson:lessons(id,title,book:books(id,title,subject))")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -487,6 +487,38 @@ export async function listPersistedTopicSummaries() {
   } catch {
     return [];
   }
+}
+
+export async function setSubblockSummaryApproval(input: {
+  childName?: string;
+  subject: string;
+  topicTitle: string;
+  sourceGroupLabel: string;
+  approved: boolean;
+}) {
+  const lessonIds = await resolveSubblockLessonIds({
+    childName: input.childName,
+    subject: input.subject,
+    topicTitle: input.topicTitle,
+    sourceGroupLabel: input.sourceGroupLabel,
+  });
+
+  if (lessonIds.length === 0) {
+    throw new Error("Nem találtam summary rekordot ehhez az alblokkhoz.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase
+    .from("lesson_summaries")
+    .update({ approved: input.approved })
+    .in("lesson_id", lessonIds)
+    .in("type", ["short_summary", "key_points"]);
+
+  if (error) {
+    throw new Error(`Failed to update summary approval: ${error.message}`);
+  }
+
+  return { ok: true, lessonCount: lessonIds.length, approved: input.approved };
 }
 
 export async function listPersistedSummaryReviews() {

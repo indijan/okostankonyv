@@ -153,6 +153,7 @@ export default async function Home({
               (summary.source_mode === "knowledge_base" ? "knowledge_base" : "legacy") as
                 | "legacy"
                 | "knowledge_base",
+            approved: summary.approved === true,
             content: summary.content,
             createdAt: summary.created_at,
           }));

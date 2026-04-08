@@ -9,6 +9,7 @@ type SubblockSummary = {
   lessonTitle: string;
   type: "short_summary" | "child_friendly_explanation" | "key_points";
   sourceMode: "legacy" | "knowledge_base";
+  approved: boolean;
   content: string;
   createdAt: string;
 };
@@ -1079,6 +1080,48 @@ export function StudyWorkspace({
       router.refresh();
     } catch (manageError) {
       setError(formatRequestError(manageError, "A fact check törlése nem sikerult"));
+    } finally {
+      setActiveKey(null);
+    }
+  }
+
+  async function setSubblockPublishState(
+    subject: string,
+    topicTitle: string,
+    sourceGroupLabel: string,
+    publish: boolean,
+  ) {
+    const key = `${publish ? "publish" : "unpublish"}:${subject}:${topicTitle}:${sourceGroupLabel}`;
+    setActiveKey(key);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/summaries/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: publish ? "publish_summaries" : "unpublish_summaries",
+          childName: learnerName,
+          subject,
+          topicTitle,
+          sourceGroupLabel,
+        }),
+      });
+      const payload = await readJsonResponse<ManageSummaryResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          formatRequestError(null, publish ? "A kimehet állítás nem sikerult" : "A visszavonás nem sikerult", {
+            status: response.status,
+            bodyError: payload.error,
+          }),
+        );
+      }
+
+      setMessage(`${sourceGroupLabel}: ${publish ? "kimehet a gyereknek" : "visszavonva a gyereknézetből"}.`);
+      router.refresh();
+    } catch (stateError) {
+      setError(formatRequestError(stateError, publish ? "A kimehet állítás nem sikerult" : "A visszavonás nem sikerult"));
     } finally {
       setActiveKey(null);
     }
@@ -2860,11 +2903,15 @@ export function StudyWorkspace({
                           ? subblock.summaries.filter(
                               (summary) =>
                                 summary.type === "short_summary" &&
+                                summary.approved &&
                                 !isMetaLessonTitle(summary.lessonTitle),
                             )
                           : subblock.summaries.filter(
                               (summary) => !isMetaLessonTitle(summary.lessonTitle),
                             );
+                      const childApprovedSummaries = subblock.summaries.filter(
+                        (summary) => summary.approved && !isMetaLessonTitle(summary.lessonTitle),
+                      );
 
                       const hasVectorStore = Boolean(subject.knowledgeBase?.vectorStoreId);
                       const canSummarize = Boolean(subblock.book);
@@ -2922,8 +2969,10 @@ export function StudyWorkspace({
                                   >
                                     {subblock.progress?.status === "completed"
                                       ? "Kész"
-                                      : visibleSummaries.length > 0
+                                      : childApprovedSummaries.length > 0
                                         ? "Olvasásra kész"
+                                        : subblock.summaries.length > 0
+                                          ? "Szülői jóváhagyásra vár"
                                         : "Még nincs kész"}
                                   </span>
                                   {subblock.progress?.status === "completed" ? (
@@ -3065,6 +3114,22 @@ export function StudyWorkspace({
                                   className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
                                 >
                                   Ingest törlése
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSubblockPublishState(subject.subject, topic.title, subblock.label, true)}
+                                  disabled={subblock.summaries.length === 0 || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Kimehet a gyereknek
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSubblockPublishState(subject.subject, topic.title, subblock.label, false)}
+                                  disabled={subblock.summaries.length === 0 || isSubblockBusy}
+                                  className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                                >
+                                  Visszavonom
                                 </button>
                               </div>
                             ) : mode === "parent" ? null : subblock.book ? (
@@ -3449,16 +3514,16 @@ export function StudyWorkspace({
                             ) : null
                           ) : (
                             <div className="mt-4 space-y-3">
-                              {!buildCombinedSummary(subblock.summaries, "short_summary") ? (
+                              {!buildCombinedSummary(childApprovedSummaries, "short_summary") ? (
                                 <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-4 text-base leading-8 text-[var(--ink)]">
-                                  Ehhez az alblokkhoz még nincs kész tananyag.
+                                  Ehhez az alblokkhoz még nincs szülő által jóváhagyott tananyag.
                                 </div>
                               ) : (
                                 <>
                                   <div className="rounded-xl border border-[#eadfcb] bg-white px-5 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55] shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
-                                    Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(subblock.summaries))}
+                                    Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
                                   </div>
-                                  {buildKeyPoints(subblock.summaries).length > 0 ? (
+                                  {buildKeyPoints(childApprovedSummaries).length > 0 ? (
                                     <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]" open>
                                       <summary className="cursor-pointer list-none">
                                         <div>
@@ -3467,7 +3532,7 @@ export function StudyWorkspace({
                                         </div>
                                       </summary>
                                       <ul className="mt-4 list-disc space-y-2 pl-5 text-[1.04rem] leading-8 text-[#1e252d]">
-                                        {buildKeyPoints(subblock.summaries).map((point) => (
+                                        {buildKeyPoints(childApprovedSummaries).map((point) => (
                                           <li key={point}>{point}</li>
                                         ))}
                                       </ul>
@@ -3484,7 +3549,7 @@ export function StudyWorkspace({
                                             <p className="text-sm text-[#424b55]">Összefoglaló</p>
                                           </div>
                                           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55]">
-                                            {summarySourceModeLabel(getLatestSummarySourceMode(subblock.summaries))}
+                                            {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
                                           </p>
                                           {subblock.progress?.completedAt ? (
                                             <p className="text-sm text-[#424b55]">{formatTimestamp(subblock.progress.completedAt)}</p>
@@ -3492,7 +3557,7 @@ export function StudyWorkspace({
                                         </div>
                                     </summary>
                                     <div className="mt-4 whitespace-pre-wrap text-[1.08rem] leading-9 text-[#1e252d]">
-                                      {renderInlineBold(buildCombinedSummary(subblock.summaries, "short_summary") ?? "")}
+                                      {renderInlineBold(buildCombinedSummary(childApprovedSummaries, "short_summary") ?? "")}
                                     </div>
                                   </details>
 
