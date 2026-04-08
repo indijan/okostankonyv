@@ -1,0 +1,157 @@
+import type { PilotDataset } from "@/lib/domain";
+
+export const pilotDataset: PilotDataset = {
+  subjectLabel: "Termeszetismeret pilot",
+  book: {
+    id: "book-termeszetismeret-1",
+    title: "Termeszetismeret",
+    subject: "Termeszetismeret",
+    grade: "also tagozatos pilot",
+    sourceType: "nkp_pdf",
+    sourceUri: "nkp://pilot/termeszetismeret",
+  },
+  children: [
+    {
+      id: "child-1",
+      name: "Gyerek 1",
+      birthYear: 2014,
+      gradeLabel: "szemelyes profil helye",
+      focus: "osszefoglalo",
+      active: true,
+      parentNotes: null,
+    },
+    {
+      id: "child-2",
+      name: "Gyerek 2",
+      birthYear: 2016,
+      gradeLabel: "szemelyes profil helye",
+      focus: "kviz",
+      active: true,
+      parentNotes: null,
+    },
+    {
+      id: "child-3",
+      name: "Gyerek 3",
+      birthYear: 2018,
+      gradeLabel: "szemelyes profil helye",
+      focus: "gyakorlas",
+      active: true,
+      parentNotes: null,
+    },
+    {
+      id: "child-4",
+      name: "Gyerek 4",
+      birthYear: 2020,
+      gradeLabel: "szemelyes profil helye",
+      focus: "forraskereses",
+      active: true,
+      parentNotes: null,
+    },
+  ],
+  lessons: [
+    {
+      id: "lesson-1",
+      bookId: "book-termeszetismeret-1",
+      title: "Bevezeto lecke",
+      chapter: "1. fejezet",
+      goal: "A tankonyvbol tisztan strukturalt, forrashu leckeoldal keszul.",
+      status: "ingest",
+    },
+    {
+      id: "lesson-2",
+      bookId: "book-termeszetismeret-1",
+      title: "Fogalmak es kulcspontok",
+      chapter: "1. fejezet",
+      goal: "A rendszer kulcsfogalmakat es rovid osszefoglalot general.",
+      status: "summary",
+    },
+    {
+      id: "lesson-3",
+      bookId: "book-termeszetismeret-1",
+      title: "Gyakorlo kerdesek",
+      chapter: "2. fejezet",
+      goal: "Minden kerdeshez egyertelmu forras es magyarazat tartozik.",
+      status: "quiz",
+    },
+    {
+      id: "lesson-4",
+      bookId: "book-termeszetismeret-1",
+      title: "Magyarazd el egyszerubben",
+      chapter: "2. fejezet",
+      goal: "Gyerekbarat atfogalmazas kulso tudas nelkul.",
+      status: "explanation",
+    },
+    {
+      id: "lesson-5",
+      bookId: "book-termeszetismeret-1",
+      title: "Jovahagyott kimenet",
+      chapter: "3. fejezet",
+      goal: "Csak validalt, threshold feletti tartalom jelenik meg.",
+      status: "approved",
+    },
+  ],
+  summaries: [
+    {
+      id: "summary-1",
+      lessonId: "lesson-2",
+      type: "short_summary",
+      content: "Rovid, forrashu osszefoglalo a tankonyv alapjan.",
+      groundingScore: 96,
+      factualityScore: 95,
+      approved: true,
+    },
+  ],
+  quizItems: [
+    {
+      id: "quiz-1",
+      lessonId: "lesson-3",
+      question: "Melyik allitas tamaszthato ala a tankonyvi reszlettel?",
+      options: [
+        "Az idezett tankonyvi allitas",
+        "Kulso tudasra epulo allitas",
+        "Altalanos AI kovetkeztetes",
+        "Forras nelkuli feltetelezes",
+      ],
+      correctAnswer: "Az idezett tankonyvi allitas",
+      explanation: "Az elfogadott valasz kozvetlen forrassal rendelkezik.",
+      sourceQuote: "Pelda tankonyvi mondat helye.",
+      sourcePage: 12,
+      groundingScore: 97,
+      factualityScore: 96,
+      approved: true,
+    },
+  ],
+  progress: [
+    {
+      id: "progress-1",
+      childId: "child-1",
+      lessonId: "lesson-5",
+      status: "completed",
+      score: 92,
+      lastCompletedAt: "2026-04-04T09:00:00.000Z",
+    },
+    {
+      id: "progress-2",
+      childId: "child-2",
+      lessonId: "lesson-3",
+      status: "in_progress",
+      score: null,
+      lastCompletedAt: null,
+    },
+  ],
+  qualityPrinciples: [
+    "Minden AI allitasnak visszakeresheto tankonyvi alapja van.",
+    "A validacio grounding score es factuality score alapon tortenik.",
+    "A rendszer nem tanit szabadon, csak a forrast dolgozza fel.",
+    "A jovahagyasi retegen at nem ment tartalom nem jelenik meg.",
+  ],
+};
+
+export function getPilotOverview() {
+  return {
+    subjectTitle: pilotDataset.book.title,
+    gradeLabel: pilotDataset.book.grade,
+    lessonsCount: pilotDataset.lessons.length,
+    childrenCount: pilotDataset.children.length,
+  };
+}

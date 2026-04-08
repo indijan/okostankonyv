@@ -1,0 +1,412 @@
+grade: 5
+title: "5. évfolyamos vizsgaanyag"
+source_document: "/Users/indijanmac/Downloads/vizsgaanyag_forrassal.docx"
+
+subjects:
+  - subject: "Irodalom"
+    exam_modes:
+      - "írásbeli"
+      - "szóbeli"
+    topics:
+      - title: "A mesék bűvöletében"
+        tags:
+          - "mese"
+          - "elemzés"
+        notes:
+          - "Az egyes mesékhez később külön lesson-egységet érdemes építeni."
+        source_groups:
+          - label: "A mese fogalma, jellemzői, fajtái, meseelemek"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/lecke_01_010"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_009"
+          - label: "A holló és a róka"
+            status: "ready"
+            urls:
+              - "https://youtu.be/NIdZbK44uVc?si=Whvc_06A_GTdQQNk"
+          - label: "Az okos leány"
+            status: "missing"
+            urls: []
+          - label: "Tündérszép Ilona és Árgyélus"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_010"
+          - label: "Fehérlófia"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/lecke_01_013"
+          - label: "Az égig érő fa"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/lecke_01_011"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_012"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_013"
+          - label: "A bolond falu"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_014"
+
+      - title: "Petőfi Sándor: János vitéz"
+        tags:
+          - "Petőfi"
+          - "epika"
+        source_groups:
+          - label: "Petőfi Sándor életútja"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_03_001"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/lecke_02_001"
+          - label: "A mű keletkezése"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_03_002"
+          - label: "1-27. rész tartalma"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_03_013"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/lecke_02_008"
+
+      - title: "Költői kifejezőeszközök a János vitézben"
+        tags:
+          - "stilisztika"
+          - "János vitéz"
+        source_groups:
+          - label: "Összefoglaló"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020/fejezet_02_osszefoglalas"
+
+      - title: "Mondák, regék"
+        tags:
+          - "monda"
+          - "rege"
+        source_groups:
+          - label: "Kapcsolódó leckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_016"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_017"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_irodalom_maskepp_csodaszarvas"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_018"
+
+      - title: "Mítoszok"
+        tags:
+          - "mítosz"
+          - "ókori történetek"
+        source_groups:
+          - label: "Kapcsolódó leckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_019"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_020"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_irodalom_maskepp_daidalosz_ikarosz"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_021"
+
+      - title: "Biblia"
+        tags:
+          - "biblia"
+          - "vallási történetek"
+        source_groups:
+          - label: "Kapcsolódó leckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_024"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_025"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_026"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_027"
+              - "https://www.nkp.hu/tankonyv/irodalom_5_nat2020_b/lecke_02_028"
+
+      - title: "Család, otthon, nemzet"
+        tags:
+          - "vers"
+          - "hazafiság"
+        source_groups:
+          - label: "Kapcsolódó művek"
+            status: "missing"
+            urls: []
+
+      - title: "Szülőföld, táj"
+        tags:
+          - "tájlíra"
+        source_groups:
+          - label: "Kapcsolódó művek"
+            status: "missing"
+            urls: []
+
+      - title: "Molnár Ferenc: A Pál utcai fiúk"
+        tags:
+          - "regény"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Magyar nyelv / Nyelvtan"
+    exam_modes:
+      - "írásbeli"
+    topics:
+      - title: "A jelek világa"
+        source_groups:
+          - label: "Természetes és mesterséges jelek"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/magyar_nyelv_5_nat2020_b/lecke_02_001"
+
+      - title: "A kommunikáció"
+        source_groups:
+          - label: "Kommunikációs leckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/magyar_nyelv_5_nat2020_b/lecke_02_002"
+              - "https://www.nkp.hu/tankonyv/magyar_nyelv_5_nat2020_b/lecke_02_003"
+              - "https://www.nkp.hu/tankonyv/magyar_nyelv_5_nat2020_b/lecke_02_005"
+
+      - title: "A magyar helyesírás alapjai"
+        source_groups:
+          - label: "Helyesírás"
+            status: "missing"
+            urls: []
+
+      - title: "Szólások, közmondások, szállóigék"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+      - title: "Hangképzés, fonéma"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+      - title: "A szavak szerkezete"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+      - title: "A szavak hangalakja és jelentése"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Természettudomány"
+    exam_modes:
+      - "írásbeli"
+    topics:
+      - title: "A növények testfelépítése"
+        source_groups:
+          - label: "Kapcsolódó leckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_001"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_002"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_003"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_004"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_005"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_01_006"
+
+      - title: "Az állatok testfelépítése"
+        source_groups:
+          - label: "Mikroszkopikus állatok"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_001"
+              - "https://youtu.be/TSaVEEXEZnw?si=iUNLDXrkK6ZXcUfT"
+              - "https://youtu.be/vWTlPxqHjQY?si=JdhskyPIwlGA2xSA"
+          - label: "Méhek"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_002"
+          - label: "Baromfiudvar"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_003"
+          - label: "Bocik"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_004"
+          - label: "Bárik, kecskék, malacok"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_005"
+          - label: "Kutyák, cicák"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_006"
+          - label: "Városi állatok"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_007"
+          - label: "További kapcsolódó lecke"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_02_011"
+
+  - subject: "Vizuális kultúra"
+    exam_modes:
+      - "gyakorlati"
+    notes:
+      - "Később ehhez érdemes lehet vizuális illusztráció-generálást használni."
+    topics:
+      - title: "Iniciálé tervezése"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "Mesebeli erdő"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "Az én iskolatáskám"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Digitális kultúra"
+    topics:
+      - title: "Fogalmak"
+        source_groups:
+          - label: "Fejezetnyitó és alapleckék"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/digitalis_kultura_5_nat2020/fejezet_04_fejezetnyito"
+              - "https://www.nkp.hu/tankonyv/digitalis_kultura_5_nat2020/lecke_04_001"
+              - "https://www.nkp.hu/tankonyv/digitalis_kultura_5_nat2020/lecke_04_002"
+      - title: "Gyakorlat"
+        source_groups:
+          - label: "Imagine Logo és Word"
+            status: "missing"
+            urls: []
+
+  - subject: "Történelem"
+    topics:
+      - title: "Magyar történelem: I. István"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_nat2020/lecke_05_016"
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_nat2020_b/lecke_05_016"
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_munkafuzet/lecke_05_016"
+      - title: "Angol történelem: I. István"
+        notes:
+          - "A témát A2-B1 szintű angolra kell fordítani, egyszerű nyelvtannal és szókinccsel."
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_nat2020/lecke_05_016"
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_nat2020_b/lecke_05_016"
+              - "https://www.nkp.hu/tankonyv/tortenelem_5_munkafuzet/lecke_05_016"
+
+  - subject: "Angol természettudomány"
+    topics:
+      - title: "Térképismeret"
+        notes:
+          - "A témát A2-B1 szintű angolra kell fordítani, egyszerű nyelvtannal."
+        source_groups:
+          - label: "Térképismeret"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_06_001"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_06_002"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_06_003"
+          - label: "Az iránytű"
+            status: "ready"
+            urls:
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_06_005"
+              - "https://www.nkp.hu/tankonyv/termeszettudomany_5_nat2020/lecke_06_006"
+
+  - subject: "Hon- és népismeret"
+    topics:
+      - title: "Szoba és konyha témakör"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Célnyelvi civilizáció"
+    topics:
+      - title: "Symbols of the UK"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Testnevelés"
+    topics:
+      - title: "Labdajátékok és torna"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Hittan"
+    topics:
+      - title: "Év végi beszélgetős témák"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Ének"
+    topics:
+      - title: "Népdalok"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "Zeneszerzők"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "Mozart és a szimfonikus zenekar"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Technika"
+    topics:
+      - title: "Fémépítővel közlekedési eszköz építése"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Angol"
+    topics:
+      - title: "Present Simple, Present Continuous, Daily routine"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+  - subject: "Matematika"
+    topics:
+      - title: "A természetes számok alakja, helye a tízes számrendszerben"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "A kerekítés szabályai, a természetes számok tagolása és helyesírása"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+      - title: "A négy alapművelet írásbeli kiszámolása, a műveleti sorrend"
+        source_groups:
+          - label: "Kapcsolódó források"
+            status: "missing"
+            urls: []
+
+next_steps:
+  - "Ki kell tölteni a missing státuszú forráscsoportokat."
+  - "A ready státuszú témákból lehet első körös ingestet építeni."
+  - "A bilingual témákat külön feldolgozási útvonalon érdemes kezelni."
+  - "A vizuális generálás ráér, előbb a forrás- és ingest-lánc stabilizálása kell."
