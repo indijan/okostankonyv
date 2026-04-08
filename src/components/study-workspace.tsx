@@ -466,7 +466,7 @@ export function StudyWorkspace({
   function toggleCardCollapse(key: string) {
     setCollapsedCards((current) => ({
       ...current,
-      [key]: !current[key],
+      [key]: !(current[key] ?? true),
     }));
   }
 
@@ -1949,7 +1949,11 @@ export function StudyWorkspace({
                           ...topic.subblocks,
                           {
                             label: createdSubblock.title,
-                            status: "missing",
+                            status:
+                              subject.knowledgeBase?.vectorStoreId ||
+                              (subject.knowledgeBase?.fileCount ?? 0) > 0
+                                ? "ready"
+                                : "missing",
                             urlCount: 0,
                             links: [],
                             book: null,
@@ -2672,21 +2676,21 @@ export function StudyWorkspace({
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
               <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
                 ▾ Kész alblokkok
               </summary>
               <p className="mt-2 text-3xl font-semibold">{completedCount} / {totalSubblocks}</p>
               <p className="mt-2 text-sm text-[var(--ink)]">{percentage(completedCount, totalSubblocks)}% kész</p>
             </details>
-            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
               <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
                 ▾ Hiányzó források
               </summary>
               <p className="mt-2 text-3xl font-semibold">{totalMissingSources}</p>
               <p className="mt-2 text-sm text-[var(--ink)]">Ennyi alblokk vár még linkpótlásra.</p>
             </details>
-            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
               <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
                 ▾ Kitöltött kvízek
               </summary>
@@ -2696,7 +2700,7 @@ export function StudyWorkspace({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
-            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
               <summary className="cursor-pointer list-none text-lg font-semibold">▾ Tantárgyi áttekintés</summary>
               <div className="mt-4 space-y-4">
                 {parentSubjectStats.map((stat) => (
@@ -2720,7 +2724,7 @@ export function StudyWorkspace({
               </div>
             </details>
 
-            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5" open>
+            <details className="rounded-[1.4rem] border border-[var(--line)] bg-white p-5">
               <summary className="cursor-pointer list-none text-lg font-semibold">▾ Blokkok állapota</summary>
               <div className="mt-4 space-y-3">
                 {parentTopicStats.map((stat) => (
@@ -2816,7 +2820,7 @@ export function StudyWorkspace({
 
             <div className="mt-5 space-y-4">
               {mode === "parent" && isParentUnlocked && subject.id ? (
-                <details className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5" open>
+                <details className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
                   <summary className="cursor-pointer list-none text-xl font-semibold text-[var(--ink)]">
                     ▾ Tantárgyi PDF tudásbázis
                   </summary>
@@ -2998,7 +3002,7 @@ export function StudyWorkspace({
 
               {subject.topics.map((topic, topicIndex) => {
                 const topicCardKey = `topic-card:${subject.subject}:${topic.title}`;
-                const isTopicCollapsed = collapsedCards[topicCardKey] === true;
+                const isTopicCollapsed = collapsedCards[topicCardKey] !== false;
 
                 return (
                 <section key={`${subject.subject}:${topic.title}`} className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
@@ -3092,7 +3096,7 @@ export function StudyWorkspace({
                     ) : null}
                     {topic.subblocks.map((subblock, subblockIndex) => {
                       const subblockCardKey = `subblock-card:${subject.subject}:${topic.title}:${subblock.label}`;
-                      const isSubblockCollapsed = collapsedCards[subblockCardKey] === true;
+                      const isSubblockCollapsed = collapsedCards[subblockCardKey] !== false;
                       const visibleSummaries =
                         mode === "child"
                           ? subblock.summaries.filter(
@@ -3460,7 +3464,7 @@ export function StudyWorkspace({
                             <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                               <div className="space-y-3">
                                 {subblock.summaryJob ? (
-                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                     <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                       {subblock.summaryJob.status === "failed" ? "▸ Summary job" : "▾ Summary job"}
                                     </summary>
@@ -3485,7 +3489,7 @@ export function StudyWorkspace({
                                   </details>
                                 ) : null}
 
-                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                   <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                     ▾ Forrás
                                   </summary>
@@ -3547,7 +3551,7 @@ export function StudyWorkspace({
                                   </div>
                                 </details>
 
-                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                   <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                     ▾ Ingestelt forrás
                                   </summary>
@@ -3594,7 +3598,7 @@ export function StudyWorkspace({
                                   )}
                                 </details>
 
-                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                   <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                     ▾ Gyerek készültsége
                                   </summary>
@@ -3645,7 +3649,7 @@ export function StudyWorkspace({
                                 </details>
 
                                 {subblock.summaryReviews.length > 0 ? (
-                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                  <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                     <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                       ▾ Fact check a leckékhez
                                     </summary>
@@ -3729,7 +3733,7 @@ export function StudyWorkspace({
                               </div>
 
                               <div className="space-y-3">
-                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                   <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">
                                     ▾ Tananyag az alblokkhoz
                                   </summary>
@@ -3743,7 +3747,7 @@ export function StudyWorkspace({
                                         Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(subblock.summaries))}
                                       </div>
                                       {buildKeyPoints(subblock.summaries).length > 0 ? (
-                                        <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                        <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                           <summary className="cursor-pointer list-none">
                                             <div>
                                               <p className="font-semibold">{subblock.label}</p>
@@ -3757,7 +3761,7 @@ export function StudyWorkspace({
                                           </ul>
                                         </details>
                                       ) : null}
-                                      <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3" open>
+                                      <details className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
                                         <summary className="cursor-pointer list-none">
                                           <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div>
@@ -3788,7 +3792,7 @@ export function StudyWorkspace({
                                     Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
                                   </div>
                                   {buildKeyPoints(childApprovedSummaries).length > 0 ? (
-                                    <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]" open>
+                                    <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
                                       <summary className="cursor-pointer list-none">
                                         <div>
                                           <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
@@ -3804,7 +3808,6 @@ export function StudyWorkspace({
                                   ) : null}
                                   <details
                                     className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]"
-                                    open
                                   >
                                     <summary className="cursor-pointer list-none">
                                         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -96,6 +96,14 @@ export default async function Home({
       id: topic.id,
       title: topic.title,
       subblocks: topic.source_groups.map((group) => {
+        const subjectKnowledgeBase =
+          (subject.id
+            ? subjectKnowledgeBases.find((item) => item.subjectId === subject.id)
+            : null) ?? null;
+        const hasSubjectKnowledgeSource = Boolean(
+          subjectKnowledgeBase?.vectorStoreId ||
+            (subjectKnowledgeBase?.fileCount ?? 0) > 0,
+        );
         const childScopedBookTitle = buildChildScopedBookTitle(
           selectedChild.name,
           subject.subject,
@@ -237,7 +245,7 @@ export default async function Home({
 
         return {
           label: group.label,
-          status: group.status,
+          status: hasSubjectKnowledgeSource ? "ready" : group.status,
           urlCount: group.urls.length,
           links: (group.links ?? group.urls.map((url) => ({ url }))).map((link) => ({
             id: "id" in link && typeof link.id === "string" ? link.id : undefined,
