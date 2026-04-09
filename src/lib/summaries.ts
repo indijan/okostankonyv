@@ -296,6 +296,32 @@ async function generateStableSummaryDraft(input: {
   );
 }
 
+async function generateStableKeyPointsDraft(input: {
+  lessonTitle: string;
+  sourceText: string;
+}) {
+  try {
+    return await withTimeout(
+      generateLessonKeyPointsDraft({
+        lessonTitle: input.lessonTitle,
+        sourceText: input.sourceText,
+      }),
+      45000,
+      "A vázlatos kivonat generalása túl sokáig tartott ennél a leckénél.",
+    );
+  } catch {
+    const fallbackSource = input.sourceText.slice(0, 7000);
+    return withTimeout(
+      generateLessonKeyPointsDraft({
+        lessonTitle: input.lessonTitle,
+        sourceText: fallbackSource,
+      }),
+      30000,
+      "A vázlatos kivonat generalása túl sokáig tartott ennél a leckénél.",
+    );
+  }
+}
+
 export async function generateLessonSummaries(options: GenerateLessonSummariesOptions = {}) {
   if (!isSupabaseConfigured()) {
     throw new AppError(
@@ -423,14 +449,10 @@ export async function generateLessonSummaries(options: GenerateLessonSummariesOp
         throw new Error(`Nem találtam releváns anyagot a vector store-ban ehhez: ${lesson.title}.`);
       }
 
-      const keyPointsDraft = await withTimeout(
-        generateLessonKeyPointsDraft({
-          lessonTitle: lesson.title,
-          sourceText,
-        }),
-        35000,
-        "A vázlatos kivonat generalása túl sokáig tartott ennél a leckénél.",
-      );
+      const keyPointsDraft = await generateStableKeyPointsDraft({
+        lessonTitle: lesson.title,
+        sourceText,
+      });
 
       const cleanedKeyPoints = sanitizeKeyPoints(keyPointsDraft.keyPoints);
 

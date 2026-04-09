@@ -1516,14 +1516,117 @@ export async function updateCurriculumSubblock(input: { topicId: string; title: 
   }
 
   const supabase = createSupabaseServerClient();
+  const currentTitle = input.title.trim();
+  const nextTitle = input.nextTitle.trim();
+
+  const { data: topicContext, error: topicContextError } = await supabase
+    .from("curriculum_topics")
+    .select("id,title,subject:curriculum_subjects(name,child:children(name))")
+    .eq("id", input.topicId)
+    .maybeSingle();
+
+  if (topicContextError) {
+    throw new Error(`Failed to load subblock context: ${topicContextError.message}`);
+  }
+
+  const subjectName =
+    topicContext &&
+    topicContext.subject &&
+    !Array.isArray(topicContext.subject) &&
+    typeof topicContext.subject.name === "string"
+      ? topicContext.subject.name
+      : null;
+  const topicTitle =
+    topicContext && typeof topicContext.title === "string" ? topicContext.title : null;
+  const childName =
+    topicContext &&
+    topicContext.subject &&
+    !Array.isArray(topicContext.subject) &&
+    topicContext.subject.child &&
+    !Array.isArray(topicContext.subject.child) &&
+    typeof topicContext.subject.child.name === "string"
+      ? topicContext.subject.child.name
+      : null;
+
+  if (subjectName && topicTitle && currentTitle !== nextTitle) {
+    const titlePairs: Array<{ oldTitle: string; newTitle: string }> = [
+      {
+        oldTitle: `${subjectName} - ${topicTitle} - ${currentTitle}`,
+        newTitle: `${subjectName} - ${topicTitle} - ${nextTitle}`,
+      },
+    ];
+
+    if (childName) {
+      titlePairs.push({
+        oldTitle: `${childName} - ${subjectName} - ${topicTitle} - ${currentTitle}`,
+        newTitle: `${childName} - ${subjectName} - ${topicTitle} - ${nextTitle}`,
+      });
+    }
+
+    const { data: matchingBooks, error: matchingBooksError } = await supabase
+      .from("books")
+      .select("id,title")
+      .eq("subject", subjectName)
+      .in(
+        "title",
+        titlePairs.map((pair) => pair.oldTitle),
+      );
+
+    if (matchingBooksError) {
+      throw new Error(`Failed to load related books for subblock rename: ${matchingBooksError.message}`);
+    }
+
+    const renamedBookIds: string[] = [];
+    for (const book of matchingBooks ?? []) {
+      const pair = titlePairs.find((item) => item.oldTitle === book.title);
+      if (!pair) {
+        continue;
+      }
+
+      const { error: updateBookError } = await supabase
+        .from("books")
+        .update({ title: pair.newTitle, updated_at: new Date().toISOString() })
+        .eq("id", book.id);
+
+      if (updateBookError) {
+        throw new Error(`Failed to rename related book: ${updateBookError.message}`);
+      }
+
+      renamedBookIds.push(book.id);
+    }
+
+    if (renamedBookIds.length > 0) {
+      const { error: updateLessonError } = await supabase
+        .from("lessons")
+        .update({ title: nextTitle })
+        .in("book_id", renamedBookIds)
+        .eq("title", currentTitle);
+
+      if (updateLessonError) {
+        throw new Error(`Failed to rename related lessons: ${updateLessonError.message}`);
+      }
+    }
+
+    const { error: updateJobsError } = await supabase
+      .from("summary_jobs")
+      .update({ source_group_label: nextTitle })
+      .eq("subject", subjectName)
+      .eq("topic_title", topicTitle)
+      .eq("source_group_label", currentTitle);
+
+    if (updateJobsError) {
+      throw new Error(`Failed to rename related summary jobs: ${updateJobsError.message}`);
+    }
+  }
+
   const { data, error } = await supabase
     .from("curriculum_subblocks")
     .update({
-      title: input.nextTitle.trim(),
+      title: nextTitle,
       updated_at: new Date().toISOString(),
     })
     .eq("topic_id", input.topicId)
-    .eq("title", input.title)
+    .eq("title", currentTitle)
     .select("id,title")
     .single();
 
