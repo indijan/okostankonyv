@@ -117,6 +117,7 @@ export default async function Home({
         const candidateBooks = persistedBooks.filter(
           (item) => bookTitlesToMatch.includes(item.title),
         );
+        const candidateBookIds = candidateBooks.map((item) => item.id);
         const rankedCandidates = candidateBooks
           .map((item) => {
             const progress = progressRows.find((row) => row.book_id === item.id) ?? null;
@@ -134,9 +135,13 @@ export default async function Home({
           .sort((a, b) => b.rank - a.rank);
         const selectedBook = rankedCandidates[0] ?? null;
         const book = selectedBook?.item ?? null;
-        const progress = book
-          ? selectedBook?.progress ?? progressRows.find((row) => row.book_id === book.id) ?? null
-          : null;
+        const progressCandidates = progressRows.filter((row) => candidateBookIds.includes(row.book_id));
+        const progress =
+          progressCandidates.sort((a, b) => {
+            const rank = (status: string) =>
+              status === "needs_review" ? 4 : status === "completed" ? 3 : status === "in_progress" ? 2 : 1;
+            return rank(b.status) - rank(a.status);
+          })[0] ?? null;
 
         const summaries = persistedSummaries
           .filter((summary) => {
@@ -147,7 +152,7 @@ export default async function Home({
                 ? summary.lesson[0]
                 : null;
 
-            return book ? lesson?.book?.id === book.id : false;
+            return lesson?.book?.id ? candidateBookIds.includes(lesson.book.id) : false;
           })
           .map((summary) => ({
             lessonTitle:
@@ -175,7 +180,7 @@ export default async function Home({
                 ? quizItem.lesson[0]
                 : null;
 
-            return book ? lesson?.book?.id === book.id : false;
+            return lesson?.book?.id ? candidateBookIds.includes(lesson.book.id) : false;
           })
           .map((quizItem) => ({
             lessonTitle:
@@ -201,10 +206,10 @@ export default async function Home({
               review.lesson && !Array.isArray(review.lesson)
                 ? review.lesson
                 : Array.isArray(review.lesson)
-                  ? review.lesson[0]
-                  : null;
+                ? review.lesson[0]
+                : null;
 
-            return book ? lesson?.book?.id === book.id : false;
+            return lesson?.book?.id ? candidateBookIds.includes(lesson.book.id) : false;
           })
           .map((review) => ({
             lessonId:
@@ -241,7 +246,9 @@ export default async function Home({
               (job.source_group_label ?? null) === group.label,
           ) ?? null;
 
-        const ingestItems = ingestDetails.filter((item) => (book ? item.bookId === book.id : false));
+        const ingestItems = ingestDetails.filter((item) =>
+          item.bookId ? candidateBookIds.includes(item.bookId) : false,
+        );
 
         return {
           label: group.label,
