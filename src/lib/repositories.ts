@@ -802,6 +802,10 @@ function buildSubblockBookTitles(input: {
   );
 }
 
+function normalizeKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
 async function resolveSubblockLessonIds(input: {
   childName?: string;
   subject: string;
@@ -817,15 +821,22 @@ async function resolveSubblockLessonIds(input: {
 
   const { data: books, error: booksError } = await supabase
     .from("books")
-    .select("id,title")
-    .in("title", titles)
+    .select("id,title,subject")
+    .eq("subject", input.subject)
     .order("created_at", { ascending: false });
 
   if (booksError) {
     throw new Error(`Failed to load books for subblock: ${booksError.message}`);
   }
 
-  const bookIds = (books ?? []).map((book) => book.id);
+  const exactTitles = new Set(titles.map((title) => normalizeKey(title)));
+  const suffix = normalizeKey(` - ${input.topicTitle} - ${input.sourceGroupLabel}`);
+  const matchedBooks = (books ?? []).filter((book) => {
+    const normalized = normalizeKey(book.title);
+    return exactTitles.has(normalized) || normalized.endsWith(suffix);
+  });
+
+  const bookIds = matchedBooks.map((book) => book.id);
   if (bookIds.length === 0) {
     return [];
   }
@@ -858,15 +869,22 @@ async function resolveSubblockTargets(input: {
 
   const { data: books, error: booksError } = await supabase
     .from("books")
-    .select("id,title")
-    .in("title", titles)
+    .select("id,title,subject")
+    .eq("subject", input.subject)
     .order("created_at", { ascending: false });
 
   if (booksError) {
     throw new Error(`Failed to load books for subblock: ${booksError.message}`);
   }
 
-  const bookIds = (books ?? []).map((book) => book.id);
+  const exactTitles = new Set(titles.map((title) => normalizeKey(title)));
+  const suffix = normalizeKey(` - ${input.topicTitle} - ${input.sourceGroupLabel}`);
+  const matchedBooks = (books ?? []).filter((book) => {
+    const normalized = normalizeKey(book.title);
+    return exactTitles.has(normalized) || normalized.endsWith(suffix);
+  });
+
+  const bookIds = matchedBooks.map((book) => book.id);
   if (bookIds.length === 0) {
     return { bookIds: [] as string[], lessonIds: [] as string[] };
   }

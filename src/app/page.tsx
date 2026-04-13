@@ -114,9 +114,16 @@ export default async function Home({
           selectedChild.id === "local-adam"
             ? [buildBookTitle(subject.subject, topic.title, group.label)]
             : [childScopedBookTitle];
-        const candidateBooks = persistedBooks.filter(
-          (item) => bookTitlesToMatch.includes(item.title),
-        );
+        const normalizedExact = new Set(bookTitlesToMatch.map((item) => item.trim().toLowerCase()));
+        const suffix = ` - ${topic.title} - ${group.label}`.trim().toLowerCase();
+        const candidateBooks = persistedBooks.filter((item) => {
+          if (item.subject !== subject.subject) {
+            return false;
+          }
+
+          const normalizedTitle = item.title.trim().toLowerCase();
+          return normalizedExact.has(normalizedTitle) || normalizedTitle.endsWith(suffix);
+        });
         const candidateBookIds = candidateBooks.map((item) => item.id);
         const rankedCandidates = candidateBooks
           .map((item) => {
