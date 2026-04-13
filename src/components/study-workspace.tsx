@@ -3782,68 +3782,77 @@ export function StudyWorkspace({
                             ) : null
                           ) : (
                             <div className="mt-4 space-y-3">
-                              {!buildCombinedSummary(childApprovedSummaries, "short_summary") ? (
-                                <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-4 text-base leading-8 text-[var(--ink)]">
-                                  Ehhez az alblokkhoz még nincs szülő által jóváhagyott tananyag.
-                                </div>
-                              ) : (
-                                <>
+                              <>
+                                {childApprovedSummaries.length > 0 ? (
                                   <div className="rounded-xl border border-[#eadfcb] bg-white px-5 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55] shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
                                     Forrásmód: {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
                                   </div>
-                                  {buildKeyPoints(childApprovedSummaries).length > 0 ? (
-                                    <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
-                                      <summary className="cursor-pointer list-none">
-                                        <div>
-                                          <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
-                                          <p className="text-sm text-[#424b55]">Vázlatos kivonat</p>
-                                        </div>
-                                      </summary>
-                                      <ul className="mt-4 list-disc space-y-2 pl-5 text-[1.04rem] leading-8 text-[#1e252d]">
-                                        {buildKeyPoints(childApprovedSummaries).map((point) => (
-                                          <li key={point}>{point}</li>
-                                        ))}
-                                      </ul>
-                                    </details>
-                                  ) : null}
+                                ) : null}
+
+                                {buildKeyPoints(childApprovedSummaries).length > 0 ? (
+                                  <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
+                                    <summary className="cursor-pointer list-none">
+                                      <div>
+                                        <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
+                                        <p className="text-sm text-[#424b55]">Vázlatos kivonat</p>
+                                      </div>
+                                    </summary>
+                                    <ul className="mt-4 list-disc space-y-2 pl-5 text-[1.04rem] leading-8 text-[#1e252d]">
+                                      {buildKeyPoints(childApprovedSummaries).map((point) => (
+                                        <li key={point}>{point}</li>
+                                      ))}
+                                    </ul>
+                                  </details>
+                                ) : (
+                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-4 text-base leading-8 text-[var(--ink)]">
+                                    Ehhez az alblokkhoz még nincs jóváhagyott vázlat.
+                                  </div>
+                                )}
+
+                                {buildCombinedSummary(childApprovedSummaries, "short_summary") ? (
                                   <details
                                     className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]"
                                   >
                                     <summary className="cursor-pointer list-none">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                          <div>
-                                            <p className="text-[1.25rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
-                                            <p className="text-sm text-[#424b55]">Összefoglaló</p>
-                                          </div>
-                                          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55]">
-                                            {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
-                                          </p>
-                                          {subblock.progress?.completedAt ? (
-                                            <p className="text-sm text-[#424b55]">{formatTimestamp(subblock.progress.completedAt)}</p>
-                                          ) : null}
+                                      <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                          <p className="text-[1.25rem] font-semibold text-[#1f252c]">▾ {subblock.label}</p>
+                                          <p className="text-sm text-[#424b55]">Összefoglaló</p>
                                         </div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#424b55]">
+                                          {summarySourceModeLabel(getLatestSummarySourceMode(childApprovedSummaries))}
+                                        </p>
+                                        {subblock.progress?.completedAt ? (
+                                          <p className="text-sm text-[#424b55]">{formatTimestamp(subblock.progress.completedAt)}</p>
+                                        ) : null}
+                                      </div>
                                     </summary>
                                     <div className="mt-4 whitespace-pre-wrap text-[1.08rem] leading-9 text-[#1e252d]">
                                       {renderInlineBold(buildCombinedSummary(childApprovedSummaries, "short_summary") ?? "")}
                                     </div>
                                   </details>
+                                ) : (
+                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-4 text-base leading-8 text-[var(--ink)]">
+                                    Ehhez az alblokkhoz még nincs jóváhagyott összefoglaló.
+                                  </div>
+                                )}
 
-                                  {subblock.quizItems.length > 0 ? (
-                                    <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
-                                      <summary className="cursor-pointer list-none">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                          <div>
-                                            <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ Gyakorló kvíz</p>
-                                            <p className="text-sm text-[#424b55]">
-                                              {subblock.quizItems.length} kérdés
-                                              {typeof subblock.progress?.quizScore === "number" &&
-                                              typeof subblock.progress?.quizTotal === "number"
-                                                ? ` • Legutóbbi eredmény: ${subblock.progress.quizScore}/${subblock.progress.quizTotal}`
-                                                : ""}
-                                            </p>
-                                          </div>
+                                {subblock.quizItems.length > 0 ? (
+                                  <details className="rounded-xl border border-[#eadfcb] bg-white px-5 py-5 shadow-[0_10px_24px_rgba(52,39,22,0.05)]">
+                                    <summary className="cursor-pointer list-none">
+                                      <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                          <p className="text-[1.1rem] font-semibold text-[#1f252c]">▾ Gyakorló kvíz</p>
+                                          <p className="text-sm text-[#424b55]">
+                                            {subblock.quizItems.length} kérdés
+                                            {typeof subblock.progress?.quizScore === "number" &&
+                                            typeof subblock.progress?.quizTotal === "number"
+                                              ? ` • Legutóbbi eredmény: ${subblock.progress.quizScore}/${subblock.progress.quizTotal}`
+                                              : ""}
+                                          </p>
                                         </div>
-                                      </summary>
+                                      </div>
+                                    </summary>
                                       <div className="mt-4 space-y-4">
                                         {subblock.quizItems.map((quizItem, index) => (
                                           <div key={`${quizItem.question}:${index}`} className="rounded-xl border border-[var(--line)] bg-[#fffaf1] px-4 py-4">
@@ -3949,10 +3958,13 @@ export function StudyWorkspace({
                                           ) : null}
                                         </div>
                                       </div>
-                                    </details>
-                                  ) : null}
-                                </>
-                              )}
+                                  </details>
+                                ) : (
+                                  <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-4 text-base leading-8 text-[var(--ink)]">
+                                    Ehhez az alblokkhoz még nincs kvíz.
+                                  </div>
+                                )}
+                              </>
                             </div>
                           )}
                             </>
